@@ -1,4 +1,4 @@
-all: gateway device sensor
+all: gateway smartDevice sensor
 
 gateway: gateway.c
 	gcc gateway.c -pthread -o gateway
