@@ -1,0 +1,20 @@
+Step 1: Open terminal and navigate to the src folder
+
+Step 2: Command to compile Gateway:
+        gcc -Wall gateway.c -o gateway
+
+Step 3: Command to compile Sensor:
+	gcc -Wall sensor.c -o sensor
+
+Step 4: Command to compile Smart Device:
+	gcc -Wall smartDevice.c -o device
+
+Step 5: Command to run Gateway:
+	./gateway gatewayConfigFile.txt	
+
+Step 6: Command to run Sensor:
+	./sensor sensorConfigFile.txt sensorInputFile.txt 
+
+Step 7: Command to run Smart Device: 
+	./device smartDeviceConfigFile.txt 
+
