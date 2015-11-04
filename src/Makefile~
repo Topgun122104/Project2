@@ -1,10 +1,18 @@
-all: gateway smartDevice sensor
+all: gateway door database motion keychain securitysystem
 
 gateway: gateway.c
 	gcc gateway.c -pthread -o gateway
 
-device: device.c
-	gcc smartDevice.c -o device
+door: door.c
+	gcc door.c -o door
 
-sensor: sensor.c
-	gcc sensor.c -pthread -o sensor
+database: database.c
+	gcc database.c -pthread -o database
+
+motion: motion.c
+	gcc motion.c -pthread -o motion
+
+keychain: keychain.c
+	gcc keychain.c -pthread -o keychain
+
+securitysystem: securitysystem.c -pthread -o securitysystem

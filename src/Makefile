@@ -15,4 +15,5 @@ motion: motion.c
 keychain: keychain.c
 	gcc keychain.c -pthread -o keychain
 
-securitysystem: securitysystem.c -pthread -o securitysystem
+securitysystem: securitysystem.c
+	gcc securitysystem.c -pthread -o securitysystem
