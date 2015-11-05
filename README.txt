@@ -3,7 +3,6 @@ CMSC 621
 Dr. Banerjee
 Group Members:
 	Lauren Mazzoli
-	Michael Berlin
 
 To run the code, run each object (gateway, smartDevice, and sensor) in a new terminal.
 
