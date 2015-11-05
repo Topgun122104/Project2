@@ -26,7 +26,7 @@ void *connection(void *socket_desc)
         memset(msg, 0, sizeof(msg));
         printf("\nFROM CLIENT:\n%s\n\n",client_msg);
 
-    }
+        
 
     if( read_size == 0 ) 
     {

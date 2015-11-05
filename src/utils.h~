@@ -16,7 +16,6 @@ typedef struct GATEWAY{
 }GATEWAY;
 
 typedef struct DEVICE{
-	int id;
 	char* ip;
 	int port;
 	char* type;
