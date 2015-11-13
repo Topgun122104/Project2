@@ -1,0 +1,17 @@
+#!/bin/bash
+
+rm -rf output/*
+
+cd src/Database
+make
+
+cd ../Door
+make
+cd ../Gateway
+make
+cd ../KeyChain
+make
+cd ../Motion
+make
+cd ../SecuritySystem
+make

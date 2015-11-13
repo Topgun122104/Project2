@@ -1,0 +1,7 @@
+#!/bin/bash
+gcc gateway.c -pthread -o gateway
+gcc door.c -pthread -o door
+gcc database.c -pthread -o database
+gcc motion.c -pthread -o motion
+gcc keychain.c -pthread -o keychain
+gcc securitysystem.c -pthread -o securitysystem
