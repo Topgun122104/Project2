@@ -15,6 +15,8 @@
 #define CMD_STATE    "currState"
 #define CMD_REGISTER "register"
 #define CMD_INSERT "insert"
+#define CMD_VALUE "currValue"
+#define CMD_SWITCH "switch"
 
 #define DOOR "Door"
 #define MOTION "Motion"
@@ -34,6 +36,7 @@ typedef struct gadget {
     int area;
     int port;
     int interval;
+    int currValue;
 } GADGET;
 
 typedef struct DOORSTATE{

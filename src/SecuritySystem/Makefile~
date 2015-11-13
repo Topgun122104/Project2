@@ -1,5 +1,0 @@
-all: securitysystem
-
-securitysystem: securitysystem.c
-	gcc securitysystem.c -o securitysystem
-
