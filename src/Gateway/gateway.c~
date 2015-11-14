@@ -231,11 +231,11 @@ void *connection(void *skt_desc)
                 puts("CHANGING"); 
                 gadget->currValue = atoi(action);
                 printGadgets();
+		log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 							gadget->port);
+		fprintf(logFile, "%s", log_msg);
+	        fflush(logFile);
+		write(db_sock, log_msg, strlen(log_msg));
             }
-	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 						gadget->port);
-	    fprintf(logFile, "%s", log_msg);
-	    fflush(logFile);
-	    write(db_sock, log_msg, strlen(log_msg));
         }
 
         // Current State Case

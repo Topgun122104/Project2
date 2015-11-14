@@ -8,9 +8,6 @@
 #include "gadgets.h"
 
 int *input;
-int *inter;
-int inter_size;
-int interIndex = 0;
 int array_size; 
 
 char* toString(int s)
@@ -18,11 +15,11 @@ char* toString(int s)
 	char *str = (char*)malloc(sizeof(char) * 6);
 	if(s)
 	{
-		strcpy(str, "Open");
+		strcpy(str, "True");
 	}
 	else
 	{
-		strcpy(str, "Close");
+		strcpy(str, "False");
 	}
 
 	return str;
@@ -35,11 +32,11 @@ int isOn(char *state)
 
 void *timer()
 {
-    FILE *fp = fopen("../SampleConfigurationFiles/SampleDoorInput.txt","r");
+    FILE *fp = fopen("../SampleConfigurationFiles/SampleKeychainInput.txt","r");
 
     if ( NULL == fp )
     {
-        perror("Door Input File Read Failure");
+        perror("Keychain Input File Read Failure");
     }
 
     // Get the last line
@@ -47,17 +44,7 @@ void *timer()
     size_t last_len = 0;
     
     while(!feof(fp))
-    {
         getline(&last, &last_len, fp);
-  	inter_size++;
-    }
-
-    //Terrible fix to wierd bug...Don't touch!
-    inter_size--;
-    inter_size--;
-    //////////////////////////////////////////
-
-    printf("Inter_size: %d\n", inter_size);
 
     fseek(fp, 0, SEEK_SET);
 
@@ -66,65 +53,43 @@ void *timer()
     last_tok = strtok(last, ",");
     
     if( NULL != last_tok )
-        array_size = atoi(last_tok);   
+        array_size = atoi(strtok(NULL, ","));    
 
-    char* temp;
-    char* temper = (char *)malloc(sizeof(char) * 6);
+    char *temp, *temper;
     size_t line_len = 0;
     int startTime, endTime, val;
 
     input = malloc((array_size + 1) * sizeof(int));
-    inter = malloc((inter_size - 1) * sizeof(int));
     
-    int flag = 1;
     while( getline(&temp, &line_len, fp) > 0 )
     {
-    	if(flag)
+        char *token, *token2;
+
+        token = strtok(temp, ",");
+
+        startTime = atoi(token);
+
+        if( NULL != token )
+            token2 = strtok(NULL, ",");
+
+        endTime = atoi(token2);
+
+        if( NULL != token2 )
+            temper = strtok(NULL, "");
+
+	//Convert True or False to 1 or 0 respectively
+        if(strstr(temper, TRU))
 	{
-		char *token;
-
-        	token = strtok(temp, ",");
-
-        	startTime = atoi(token);
-
-        	if( NULL != token )
-            		strcpy(temper, strtok(NULL, ""));
-
-		printf("Start: %d  Temper: %s\n", startTime, temper);
-
-		flag = 0;
+		val = 1;
 	}
 	else
 	{
-		char *token;
-
-        	token = strtok(temp, ",");
-
-        	endTime = atoi(token);
-
-		printf("Start: %d End: %d   ", startTime, endTime);
-
-		//Convert Open or Close to 1 or 0 respectively
-        	if(strstr(temper, OPEN))
-		{
-			val = 1;
-		}
-		else
-		{
-			val = 0;
-		}
-
-		printf("Value: %d\n", val);
-       		 int i;
-        	for(i=startTime; i<=endTime; i++)
-        	    input[i] = val;
-
-		inter[interIndex++] = endTime - startTime;
-
-		startTime = endTime;
-		if( NULL != token )
-          	  strcpy(temper, strtok(NULL, ""));
+		val = 0;
 	}
+
+        int i;
+        for(i=startTime; i<=endTime; i++)
+            input[i] = val;
     }
     
     fclose(fp);
@@ -133,13 +98,6 @@ void *timer()
     for(x=0;x<array_size;x++)
     {
         printf("%d",input[x]);
-    }
-	puts("\n");
-
-    int y;
-    for(y=0;y<inter_size;y++)
-    {
-        printf("%d ",inter[y]);
     }
 }
 
@@ -175,7 +133,7 @@ int main(int argc , char *argv[])
         return 1;
     }
 
-    FILE *log = fopen(argv[2],"a");
+    FILE *log = fopen("../src/KeyChain/KeychainSensor.log","a");
 
     if ( NULL == fp )
     {
@@ -268,8 +226,18 @@ int main(int argc , char *argv[])
      
     puts("Connected\n");
 
-    //Populate the global arrays
-    timer();
+    // Time Thread
+    pthread_t time_thread;
+
+    if( pthread_create(&time_thread, NULL, timer, (void *) NULL) < 0 )
+    {
+        perror("Thread Creation Failed");
+        return 1;
+    }
+
+    // Wait interval (in seconds)
+    int interval = 5;
+    int state_interval = 0;
 
     // Sensor State (On by default)
     char *state = ON;
@@ -277,11 +245,6 @@ int main(int argc , char *argv[])
     char *type, *action;
 
     int currValue = 0;
-    int oldValue = 0;
-    int intervalIndex = 0;
-
-    // Wait interval (in seconds)
-    int actualTime = 0;
 
     // Register Message
     char msg[MSG_SIZE];
@@ -301,30 +264,19 @@ int main(int argc , char *argv[])
             break;
         }
 
-	printf("Current Interval: %d\n", inter[intervalIndex]);
         // Wait for time interval (5 seconds default)
-	int currInterval = inter[intervalIndex++];
-        sleep(currInterval);
-	//Keep track of index in input array
-	actualTime += currInterval;
+        sleep(interval);
 
-	//Make sure input doesn't go out of bounds
-	if(actualTime > array_size)
-		actualTime -=array_size;
+        state_interval += interval;
 
-	//Make sure interval doesn't go out of bounds
-        if(intervalIndex >= inter_size)
-            intervalIndex = 0;
+        if(state_interval > array_size)
+            state_interval -= array_size;
 
-	//Get value at actual point in input array
-        currValue = input[actualTime];
+        currValue = input[state_interval];
 
         memset(msg, 0, sizeof(msg));
 
-	printf("Current Value: %d\nOld Value: %d\n", currValue, oldValue);
-
-	//Only send door state when state changes
-        if(currValue != oldValue)
+        if( isOn(state) )
         {            
 		sprintf(msg,
                     "Type:currValue;Action:%d",
@@ -336,8 +288,6 @@ int main(int argc , char *argv[])
                     sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
 	fprintf(log, "%s", log_msg);
 	fflush(log);
-	//Update the values
-	oldValue = currValue;
     }
      
     fclose(log);

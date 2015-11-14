@@ -31,7 +31,7 @@ void getCommands(char string[], char **type, char **action)
 int main(int argc , char *argv[])
 {
     FILE *fp = fopen(argv[1],"r");
-    FILE *log = fopen(argv[2],"a");
+    FILE *log = fopen("../src/SecuritySystem/system.log","a");
 
     if ( NULL == log )
     {

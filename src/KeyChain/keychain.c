@@ -133,7 +133,7 @@ int main(int argc , char *argv[])
         return 1;
     }
 
-    FILE *log = fopen("../src/KeyChain/KeychainSensor.log","a");
+    FILE *log = fopen(argv[2],"a");
 
     if ( NULL == fp )
     {

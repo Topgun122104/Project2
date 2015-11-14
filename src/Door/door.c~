@@ -175,7 +175,7 @@ int main(int argc , char *argv[])
         return 1;
     }
 
-    FILE *log = fopen(argv[2],"a");
+    FILE *log = fopen("../src/Door/door.log","a");
 
     if ( NULL == fp )
     {
