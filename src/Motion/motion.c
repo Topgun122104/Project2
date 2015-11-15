@@ -245,7 +245,7 @@ int main(int argc , char *argv[])
     char *type, *action;
 
     int currValue = 0;
-
+    
     // Register Message
     char msg[MSG_SIZE];
     char log_msg[MSG_SIZE];
@@ -253,16 +253,27 @@ int main(int argc , char *argv[])
     sprintf(msg,
             "Type:register;Action:%s-%s-%d-%d",
             s_type, s_ip, s_port, s_area);
+    
+    // Initialize the vector clock, all counters are 0
+    VECTORCLOCK *vectorclock = malloc(sizeof(VECTORCLOCK));
+    vectorclock->door = 0;
+    vectorclock->motion = 0;
+    vectorclock->keyChain = 0;
+    vectorclock->gateway = 0;
+    vectorclock->securitySystem = 0;
 
     while(1)
     {
         printf("\nSend to Gateway: %s\n",msg);
+
         // Send Gateway Current Monitored Value
         if( send(sock , msg , strlen(msg) , 0) < 0)
         {
             puts("Send failed");
             break;
         }
+        
+        // Receive Gateway message
 
         // Wait for time interval (5 seconds default)
         sleep(interval);

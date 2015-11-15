@@ -44,4 +44,11 @@ typedef struct DOORSTATE{
 	char* state;
 }DOORSTATE;
 
+typedef struct VECTORCLOCK {
+	int door;
+	int motion;
+	int keyChain;
+	int gateway;
+	int securitySystem;
+} VECTORCLOCK;
 #endif

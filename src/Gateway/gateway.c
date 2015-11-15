@@ -84,6 +84,51 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 	return str;
 }
 
+// Send multicast to all devices, except database, with list of messages
+void sendDeviceListMulticast() {
+	char deviceList[MSG_SIZE];
+	int x;
+	
+	// Creating the device list to send to all devices
+    for(x=0; x<gadget_index; x++)
+    {
+        GADGET *gadget = gadget_list[x];
+        char comma[2] = ",";
+        char portChar[10];
+        
+        if(strcmp( gadget->gadgetType, DATABASE) != 0) 
+        {
+			sprintf(portChar, "%d", gadget->port);
+			strcat(deviceList, gadget->ip);
+			strcat(deviceList, comma);
+			strcat(deviceList, portChar);
+			strcat(deviceList, comma);
+        }
+    }
+        
+    //Sending unicast for all devices with the deviceList
+    for(x=0; x<gadget_index; x++)
+    {
+        GADGET *gadget = gadget_list[x];
+        
+        if(strcmp (gadget-> gadgetType, DATABASE) != 0)
+        {
+			struct sockaddr_in addrDest;
+	
+			addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+			addrDest.sin_family = AF_INET;
+			addrDest.sin_port = htons(gadget->port);
+			
+			if( sendto(gadget->id, deviceList , strlen(deviceList) , 0, 
+					(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+			{
+				puts("Send failed");
+				break;
+			} 
+        }
+    }	    
+}
+
 // Print the latest information about Devices and Sensors
 void printGadgets()
 {
@@ -188,6 +233,14 @@ void *connection(void *skt_desc)
     char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE];
     char* log_msg;
 
+    // Initilize Vector Clock
+    VECTORCLOCK *vectorclock = malloc(sizeof(VECTORCLOCK));
+    vectorclock->door = 0;
+    vectorclock->motion = 0;
+    vectorclock->keyChain = 0;
+    vectorclock->gateway = 0;
+    vectorclock->securitySystem = 0;
+
     // Receive Data from Client
     while( (read_size = recv(client_skt_desc, client_msg, MSG_SIZE, 0)) > 0 )
     {
@@ -214,13 +267,19 @@ void *connection(void *skt_desc)
 
             gadget_list[gadget_index++] = gadget;
 
+            // Creating list of the ports and ips to send to all devices
+            if (gadget_index == 5) {
+                sendDeviceListMulticast();
+            }
+            
             printGadgets();
-	    if(strstr(gadget->gadgetType, DATABASE))
-	    {
-		puts("Inside if...");
-		db_sock = client_skt_desc;
-	  	printf("db_sock: %d\n", db_sock);
-	    }
+            
+			if(strstr(gadget->gadgetType, DATABASE))
+			{
+				puts("Inside if...");
+				db_sock = client_skt_desc;
+				printf("db_sock: %d\n", db_sock);
+			}
         }
 
         // Current Temperature Value Case
@@ -340,7 +399,7 @@ int main( int argc, char *argv[] )
         perror("Error creating socket");
         return 1;
     }
-
+    
     puts("Socket Created...");
 
     // Set host machine address as Any Incoming Address

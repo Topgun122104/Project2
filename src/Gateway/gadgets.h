@@ -39,9 +39,28 @@ typedef struct gadget {
     int currValue;
 } GADGET;
 
+typedef struct devicelist {
+	char *doorIP;
+	char *motionIP;
+	char *keychainIP;
+	char *securitydeviceIP;
+	int doorPort;
+	int motionPort;
+	int keychainPort;
+	int securitydevicePort;
+} DEVICELIST;
+
 typedef struct DOORSTATE{
 	int time;
 	char* state;
 }DOORSTATE;
+
+typedef struct VECTORCLOCK {
+	int door;
+	int motion;
+	int keyChain;
+	int gateway;
+	int securitySystem;
+} VECTORCLOCK;
 
 #endif
