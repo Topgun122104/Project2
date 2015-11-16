@@ -13,6 +13,31 @@ int gadget_index = 0;
 int *input;
 int array_size; 
 
+// Sends the series of unicast messages
+void sendMulticast(char msg[], int sock)
+{	
+	// Send remainder of multicast messages
+	int x;
+	for(x=0;x<gadget_index;x++)
+	{
+		printf("SENDING TO ALL! \n");
+		GADGET *gadget = gadget_list[x];
+		struct sockaddr_in addrDest;
+		
+		addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+		addrDest.sin_family = AF_INET;
+		addrDest.sin_port = htons(gadget->port);
+		
+		if( sendto(sock, msg , strlen(msg) , 0, 
+				(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+		{
+			puts("Send failed");
+			break;
+		} 
+		
+	}
+}
+
 void saveDevices(char string[], char *ip, int port) 
 {
 	char *token, *t, *p;
@@ -20,7 +45,6 @@ void saveDevices(char string[], char *ip, int port)
 	
 	t = strtok(string, ",");
 	
-	//TODO CHANGE THIS TO 4 ONCE THEY'RE ALL CONNECTED
 	for(x=0; x<4; x++) 
 	{
 		GADGET *gadget = malloc(sizeof(GADGET));
@@ -297,12 +321,20 @@ int main(int argc , char *argv[])
     while(1)
     {
         printf("\nSend to Gateway: %s\n",msg);
+        
+        // Increment local vector clock
+        vectorclock->keyChain++;
+        
         // Send Gateway Current Monitored Value
-        if( send(sock , msg , strlen(msg) , 0) < 0)
-        {
-            puts("Send failed");
-            break;
-        }
+    	if(send(sock , msg , strlen(msg) , 0) < 0)
+    	{
+    	 	puts("Send failed");
+    	    break;
+    	}
+    	printf("Sent to gateway\n");
+    	
+        sendMulticast(msg, sock);
+        printf("Sent to all others");
         
         // Receive multicast messages from other devices
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
@@ -329,7 +361,7 @@ int main(int argc , char *argv[])
 
         if( isOn(state) )
         {            
-		sprintf(msg,
+        	sprintf(msg,
                     "Type:currValue;Action:%d",
                     currValue);
         }

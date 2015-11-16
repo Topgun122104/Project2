@@ -20,7 +20,6 @@ void saveDevices(char string[], char *ip, int port)
 	
 	t = strtok(string, ",");
 	
-	//TODO CHANGE THIS TO 4 ONCE THEY'RE ALL CONNECTED
 	for(x=0; x<4; x++) 
 	{
 		GADGET *gadget = malloc(sizeof(GADGET));
@@ -35,10 +34,8 @@ void saveDevices(char string[], char *ip, int port)
 			gadget->port = port;
 		}
 		
-		if (strncmp(ip, gadget->ip, strlen(ip)) != 0) {
-			printf("added ip: %s port: %d\n", gadget->ip, gadget->port);
+		if (strncmp(ip, gadget->ip, strlen(ip)) != 0)
 			gadget_list[gadget_index++] = gadget;
-		}
 	}
 }
 

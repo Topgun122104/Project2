@@ -12,13 +12,11 @@ int gadget_index = 0;
 
 void saveDevices(char string[], char *ip, int port) 
 {
-	printf("SAVING DEVICES\n");
 	char *token, *t, *p;
 	int x;
 	
 	t = strtok(string, ",");
 	
-	//TODO CHANGE THIS TO 4 ONCE THEY'RE ALL CONNECTED
 	for(x=0; x<4; x++) 
 	{
 		GADGET *gadget = malloc(sizeof(GADGET));
@@ -33,10 +31,8 @@ void saveDevices(char string[], char *ip, int port)
 			gadget->port = port;
 		}
 		
-		if (strncmp(ip, gadget->ip, strlen(ip)) != 0) {
-			printf("added ip: %s port: %d\n", gadget->ip, gadget->port);
+		if (strncmp(ip, gadget->ip, strlen(ip)) != 0)
 			gadget_list[gadget_index++] = gadget;
-		}
 	}
 }
 
@@ -210,8 +206,6 @@ int main(int argc , char *argv[])
         		saveDevices(server_reply, d_ip, d_port);
         	}
         	
-        	//TODO NEED TO FIGURE THIS OUT! WHY ISN'T IT CONTINUING TO LISTEN?
-        	//	CAHNGE BACK TO 
         	else 
         	{
 				getCommands(server_reply,&type,&action);

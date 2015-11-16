@@ -23,7 +23,6 @@ void saveDevices(char string[], char *ip, int port)
 	
 	t = strtok(string, ",");
 	
-	//TODO CHANGE THIS TO 4 ONCE THEY'RE ALL CONNECTED
 	for(x=0; x<4; x++) 
 	{
 		GADGET *gadget = malloc(sizeof(GADGET));
@@ -128,14 +127,14 @@ void *timer()
 	{
 		char *token;
 
-        	token = strtok(temp, ",");
-
-        	endTime = atoi(token);
+        token = strtok(temp, ",");
+        
+        endTime = atoi(token);
 
 		printf("Start: %d End: %d   ", startTime, endTime);
 
 		//Convert Open or Close to 1 or 0 respectively
-        	if(strstr(temper, OPEN))
+        if(strstr(temper, OPEN))
 		{
 			val = 1;
 		}
@@ -144,10 +143,9 @@ void *timer()
 			val = 0;
 		}
 
-		printf("Value: %d\n", val);
-       		 int i;
-        	for(i=startTime; i<=endTime; i++)
-        	    input[i] = val;
+       	int i;
+        for(i=startTime; i<=endTime; i++)
+            input[i] = val;
 
 		inter[interIndex++] = endTime - startTime;
 

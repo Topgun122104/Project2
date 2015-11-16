@@ -92,7 +92,6 @@ void sendDeviceListMulticast() {
 	strcpy(deviceList, "DeviceList");
 	
 	// Creating the device list to send to all devices
-	printf("Gadget index is: %i", gadget_index);
     for(x=0; x<gadget_index; x++)
     {
         GADGET *gadget = gadget_list[x];
@@ -273,9 +272,7 @@ void *connection(void *skt_desc)
 
             gadget_list[gadget_index++] = gadget;
 
-            // Creating list of the ports and ips to send to all devices
-            
-            //TODO CHANGE BACK TO 5! 
+            // Creating list of the ports and ips to send to all devices            
             if (gadget_index == 5) {
                 sendDeviceListMulticast();
             }
