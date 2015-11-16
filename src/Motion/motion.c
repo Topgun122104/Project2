@@ -49,7 +49,7 @@ void updateVectorClock(char msg[]) {
 	}
 	
     char vc[MSG_SIZE];
-    sprintf(vc, "Motion VectorClock:%d,%d,%d,%d,%d,\n",
+    sprintf(vc, "VectorClock:%d,%d,%d,%d,%d,\n",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
@@ -375,10 +375,32 @@ int main(int argc , char *argv[])
     while(1)
     {
         printf("\nSend to Gateway: %s\n",msg);
+                
+        //Send message to gateway
+      	if(send(sock , msg , strlen(msg) , 0) < 0)
+      	{
+          	puts("Send failed"); 
+            break;
+        }
+                
+        memset(vc, 0, sizeof(vc));
+            	
+        // Send multicast 
+        if(gadget_index != 0)
+        {
+            vectorclock.motion++;
 
-        
-        // Send multicast to all devices
-        sendMulticast(msg, sock);
+            sprintf(vc,
+                	    "Type:vectorClock;Action:%d-%d-%d-%d-%d",
+        				vectorclock.door, vectorclock.motion,
+        				vectorclock.keyChain, vectorclock.gateway,
+        				vectorclock.securitySystem);
+                	
+             printf("Vector clock message sending is: %s", vc);
+                	
+            // Send multicast with msg to all devices
+           sendMulticast(vc, sock);
+        }
         
         // Receive multicast messages from other devices
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)

@@ -62,7 +62,7 @@ int max(int x, int y) {
 }
 
 // Sends the series of unicast messages
-void sendMulticast(char msg[], int sock)
+void sendMulticast(char vectorMsg[], int sock)
 {	
 	// Send remainder of multicast messages
 	int x;
@@ -75,7 +75,7 @@ void sendMulticast(char msg[], int sock)
 		addrDest.sin_family = AF_INET;
 		addrDest.sin_port = htons(gadget->port);
 		
-		if( sendto(sock, msg , strlen(msg) , 0, 
+		if( sendto(sock, vectorMsg , strlen(vectorMsg) , 0, 
 				(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
 		{
 			puts("Send failed");
@@ -85,12 +85,9 @@ void sendMulticast(char msg[], int sock)
 	}
 	
     // Send Gateway Current Monitored Value
-	if(send(sock , msg , strlen(msg) , 0) < 0)
+	if(send(sock , vectorMsg , strlen(vectorMsg) , 0) < 0)
 	{
 	 	puts("Send failed"); 
-	 	//break;
-	 	//TODO this used to have a break statement, maybe return -1 if break? and
-	 	//  main actually breaks?
 	}
 }
 
@@ -379,8 +376,31 @@ int main(int argc , char *argv[])
     {
         printf("\nSend to Gateway: %s\n",msg);
         
-        // Send multicast to all devices
-        sendMulticast(msg, sock);
+        //Send message to gateway
+    	if(send(sock , msg , strlen(msg) , 0) < 0)
+    	{
+    	 	puts("Send failed"); 
+    	 	break;
+    	}
+        
+    	memset(vc, 0, sizeof(vc));
+    	
+        // Send multicast 
+        if(gadget_index != 0)
+        {
+            vectorclock.keyChain++;
+
+        	sprintf(vc,
+        	    "Type:vectorClock;Action:%d-%d-%d-%d-%d",
+				vectorclock.door, vectorclock.motion,
+				vectorclock.keyChain, vectorclock.gateway,
+				vectorclock.securitySystem);
+        	
+        	printf("Vector clock message sending is: %s", vc);
+        	
+            // Send multicast with msg to all devices
+            sendMulticast(vc, sock);
+        }
         
         // Receive multicast messages from other devices
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
@@ -412,35 +432,15 @@ int main(int argc , char *argv[])
 
         currValue = input[state_interval];
         
-        memset(vc, 0, sizeof(vc));
         memset(msg, 0, sizeof(msg));
 
-        // Increment local vector clock, only after gadgets registered
-    	if(gadget_index != 0) {
-            vectorclock.keyChain++;
-        
-            sprintf(vc, "VectorClock,%d,%d,%d,%d,%d,",
-    				vectorclock.door, vectorclock.motion,
-    				vectorclock.keyChain, vectorclock.gateway,
-    				vectorclock.securitySystem);
-            
-            if( isOn(state) )
-            {            
-            	sprintf(msg,
-                        "%sType:currValue;Action:%d",
-                        vc, currValue);
-            }
-    	}
-    	
-    	else {
+        if( isOn(state) )
+        {            
+             sprintf(msg,
+                  "Type:currValue;Action:%d",
+                  currValue);
+        }
 
-			if( isOn(state) )
-			{            
-				sprintf(msg,
-						"Type:currValue;Action:%d",
-						currValue);
-			}
-    	}
     	
 		char* v = toString(currValue);
 		sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",

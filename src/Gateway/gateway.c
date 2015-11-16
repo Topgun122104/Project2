@@ -282,7 +282,7 @@ void *connection(void *skt_desc)
     gadget->id = client_skt_desc;
 
     int read_size;
-    char *command, *action;
+    char *command, *action;;
 
     char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE], cpy_msg[MSG_SIZE];
     char* log_msg;
@@ -342,10 +342,6 @@ void *connection(void *skt_desc)
         // Current Temperature Value Case
         else if( strncmp(command, CMD_VALUE, strlen(CMD_VALUE)) == 0 ) 
         {
-    		printf("Updating clock2... %s\n", cpy_msg);
-    		if(strncmp(cpy_msg, "VectorClock", 11) == 0)
-    			updateVectorClock(cpy_msg);
-    		
             if( atoi(action) != gadget->currValue )
             {
                 puts("CHANGING"); 
@@ -362,11 +358,7 @@ void *connection(void *skt_desc)
         // Current State Case
         else if( strncmp( command, CMD_STATE, strlen(CMD_STATE) ) == 0 && 
                  strncmp( gadget->state, action, strlen(action) ) != 0 )
-        {
-    		printf("Updating clock... %s\n", cpy_msg);
-    		if(strncmp(cpy_msg, "VectorClock", 11) == 0)
-    			updateVectorClock(cpy_msg);
-    		
+        {	
             memset(gadget->state, 0, 3);
             strcpy(gadget->state, action);
             printGadgets();
@@ -374,6 +366,14 @@ void *connection(void *skt_desc)
 			fprintf(logFile, "%s", log_msg);
 			fflush(logFile);
 			write(db_sock, log_msg, strlen(log_msg));
+        }
+        
+        // vectorClock state case
+        else if ( strncmp( command, CMD_VECTOR, strlen(CMD_VECTOR)) == 0) 
+        {
+    		printf("Updating clock... %s\n", cpy_msg);
+    			updateVectorClock(cpy_msg);
+    		
         }
 
         memset(out_msg, 0, sizeof(out_msg));

@@ -17,6 +17,7 @@
 #define CMD_INSERT "insert"
 #define CMD_VALUE "currValue"
 #define CMD_SWITCH "switch"
+#define CMD_VECTOR "vectorClock"
 
 #define DOOR "Door"
 #define MOTION "Motion"
