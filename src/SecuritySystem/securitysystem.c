@@ -3,8 +3,42 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 #include "gadgets.h"
+
+GADGET *gadget_list[MAX_CONNECTIONS];
+int gadget_index = 0;
+
+void saveDevices(char string[], char *ip, int port) 
+{
+	printf("SAVING DEVICES\n");
+	char *token, *t, *p;
+	int x;
+	
+	t = strtok(string, ",");
+	
+	//TODO CHANGE THIS TO 4 ONCE THEY'RE ALL CONNECTED
+	for(x=0; x<4; x++) 
+	{
+		GADGET *gadget = malloc(sizeof(GADGET));
+		
+		if(NULL != t) 
+			gadget->ip = strtok(NULL, ",");
+		
+		if(NULL != t)
+		{
+			p = strtok(NULL, ",");
+			int port = atoi(p);
+			gadget->port = port;
+		}
+		
+		if (strncmp(ip, gadget->ip, strlen(ip)) != 0) {
+			printf("added ip: %s port: %d\n", gadget->ip, gadget->port);
+			gadget_list[gadget_index++] = gadget;
+		}
+	}
+}
 
 void getCommands(char string[], char **type, char **action)
 {
@@ -144,6 +178,16 @@ int main(int argc , char *argv[])
     char *state = (char *)malloc(sizeof(char) * 3);
     strcpy(state,OFF);
 
+    // Initialize the vector clock, all counters are 0
+    VECTORCLOCK *vectorclock = malloc(sizeof(VECTORCLOCK));
+    vectorclock->door = 0;
+    vectorclock->motion = 0;
+    vectorclock->keyChain = 0;
+    vectorclock->gateway = 0;
+    vectorclock->securitySystem = 0;
+    
+    //fcntl(sock, F_SETFL, O_NONBLOCK);
+    
     while(1)
     {
         // Send Message to Gateway
@@ -155,36 +199,43 @@ int main(int argc , char *argv[])
         
         printf("\nSent: %s\n",msg);
 
-        // Receive Command from Gateway
-        if( recv(sock , server_reply , MSG_SIZE , 0) < 0)
+        // Receive multicast messages from other devices or Command from Gateway
+        if( (recv(sock , server_reply , MSG_SIZE , 0) > 0)) 
         {
-            puts("Gateway reply failed");
-            break;
+        	puts("Gateway reply:");
+        	puts(server_reply);
+        	
+        	if(strncmp( server_reply, "DeviceList", 10) == 0) 
+        	{
+        		saveDevices(server_reply, d_ip, d_port);
+        	}
+        	
+        	//TODO NEED TO FIGURE THIS OUT! WHY ISN'T IT CONTINUING TO LISTEN?
+        	//	CAHNGE BACK TO 
+        	else 
+        	{
+				getCommands(server_reply,&type,&action);
+		
+				if ( strncmp( type, CMD_SWITCH, strlen(CMD_SWITCH) ) == 0 )
+				{
+					puts("Device Switching State");
+					strcpy(state, action);
+					puts("NEW STATE:");
+					puts(state);
+		
+				sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
+							sock, d_type, state, (unsigned)time(NULL), d_ip, d_port);
+				fprintf(log, "%s", log_msg);
+				fflush(log);
+				}	
+		
+				memset(msg, 0, sizeof(msg));
+				memset(server_reply, 0, sizeof(server_reply));
+				sprintf(msg,
+						"Type:%s;Action:%s",
+						CMD_STATE, state);
+        	}
         }
-         
-        puts("Gateway reply:");
-        puts(server_reply);
-
-        getCommands(server_reply,&type,&action);
-
-	if ( strncmp( type, CMD_SWITCH, strlen(CMD_SWITCH) ) == 0 )
-        {
-            puts("Device Switching State");
-            strcpy(state, action);
-            puts("NEW STATE:");
-            puts(state);
-
-	    sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
-                    sock, d_type, state, (unsigned)time(NULL), d_ip, d_port);
-	    fprintf(log, "%s", log_msg);
-	    fflush(log);
-        }	
-
-        memset(msg, 0, sizeof(msg));
-        memset(server_reply, 0, sizeof(server_reply));
-        sprintf(msg,
-                "Type:%s;Action:%s",
-                CMD_STATE, state);
     }
     
     fclose(log); 

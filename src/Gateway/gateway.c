@@ -86,24 +86,30 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 
 // Send multicast to all devices, except database, with list of messages
 void sendDeviceListMulticast() {
+	
 	char deviceList[MSG_SIZE];
 	int x;
+	strcpy(deviceList, "DeviceList");
 	
 	// Creating the device list to send to all devices
+	printf("Gadget index is: %i", gadget_index);
     for(x=0; x<gadget_index; x++)
     {
         GADGET *gadget = gadget_list[x];
         char comma[2] = ",";
         char portChar[10];
+        char line[20];        
         
         if(strcmp( gadget->gadgetType, DATABASE) != 0) 
         {
 			sprintf(portChar, "%d", gadget->port);
-			strcat(deviceList, gadget->ip);
-			strcat(deviceList, comma);
-			strcat(deviceList, portChar);
-			strcat(deviceList, comma);
+			sprintf(line, ",%s,%d", gadget->ip, gadget->port);
+			strcat(deviceList, line);
+
         }
+        deviceList[MSG_SIZE] = '\0';
+        printf("GADGET MESSAGE: %s\n", deviceList);
+
     }
         
     //Sending unicast for all devices with the deviceList
@@ -132,7 +138,7 @@ void sendDeviceListMulticast() {
 // Print the latest information about Devices and Sensors
 void printGadgets()
 {
-
+	
     puts("------------------------------------------------");
 
     int x;
@@ -268,6 +274,8 @@ void *connection(void *skt_desc)
             gadget_list[gadget_index++] = gadget;
 
             // Creating list of the ports and ips to send to all devices
+            
+            //TODO CHANGE BACK TO 5! 
             if (gadget_index == 5) {
                 sendDeviceListMulticast();
             }

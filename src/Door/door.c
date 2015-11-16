@@ -4,14 +4,44 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #include "gadgets.h"
 
+GADGET *gadget_list[MAX_CONNECTIONS];
+int gadget_index = 0;
 int *input;
 int *inter;
 int inter_size;
 int interIndex = 0;
 int array_size; 
+
+void saveDevices(char string[], char *ip, int port) 
+{
+	char *token, *t, *p;
+	int x;
+	
+	t = strtok(string, ",");
+	
+	//TODO CHANGE THIS TO 4 ONCE THEY'RE ALL CONNECTED
+	for(x=0; x<4; x++) 
+	{
+		GADGET *gadget = malloc(sizeof(GADGET));
+		
+		if(NULL != t) 
+			gadget->ip = strtok(NULL, ",");
+		
+		if(NULL != t)
+		{
+			p = strtok(NULL, ",");
+			int port = atoi(p);
+			gadget->port = port;
+		}
+		
+		if (strncmp(ip, gadget->ip, strlen(ip)) != 0)
+			gadget_list[gadget_index++] = gadget;
+	}
+}
 
 char* toString(int s)
 {
@@ -175,7 +205,7 @@ int main(int argc , char *argv[])
         return 1;
     }
 
-    FILE *log = fopen(argv[2],"a");
+    FILE *log = fopen(argv[3],"a");
 
     if ( NULL == fp )
     {
@@ -291,6 +321,16 @@ int main(int argc , char *argv[])
             "Type:register;Action:%s-%s-%d-%d",
             s_type, s_ip, s_port, s_area);
 
+    // Initialize the vector clock, all counters are 0
+    VECTORCLOCK *vectorclock = malloc(sizeof(VECTORCLOCK));
+    vectorclock->door = 0;
+    vectorclock->motion = 0;
+    vectorclock->keyChain = 0;
+    vectorclock->gateway = 0;
+    vectorclock->securitySystem = 0;
+    
+    fcntl(sock, F_SETFL, O_NONBLOCK);
+    
     while(1)
     {
         printf("\nSend to Gateway: %s\n",msg);
@@ -300,44 +340,57 @@ int main(int argc , char *argv[])
             puts("Send failed");
             break;
         }
-
-	printf("Current Interval: %d\n", inter[intervalIndex]);
-        // Wait for time interval (5 seconds default)
-	int currInterval = inter[intervalIndex++];
-        sleep(currInterval);
-	//Keep track of index in input array
-	actualTime += currInterval;
-
-	//Make sure input doesn't go out of bounds
-	if(actualTime > array_size)
-		actualTime -=array_size;
-
-	//Make sure interval doesn't go out of bounds
-        if(intervalIndex >= inter_size)
-            intervalIndex = 0;
-
-	//Get value at actual point in input array
-        currValue = input[actualTime];
-
-        memset(msg, 0, sizeof(msg));
-
-	printf("Current Value: %d\nOld Value: %d\n", currValue, oldValue);
-
-	//Only send door state when state changes
-        if(currValue != oldValue)
-        {            
-		sprintf(msg,
-                    "Type:currValue;Action:%d",
-                    currValue);
+        
+        // Receive multicast messages from other devices
+        if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
+        {
+            puts("Gateway reply:");
+            puts(server_reply);
+            
+        	// The device list multicast message
+        	if( strncmp( server_reply, "DeviceList", 10) == 0)
+        		saveDevices(server_reply, s_ip, s_port);
         }
 
-	char* v = toString(currValue);
-	sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
-                    sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
-	fprintf(log, "%s", log_msg);
-	fflush(log);
-	//Update the values
-	oldValue = currValue;
+		printf("Current Interval: %d\n", inter[intervalIndex]);
+		
+		// Wait for time interval (5 seconds default)
+		int currInterval = inter[intervalIndex++];
+			sleep(currInterval);
+		
+		//Keep track of index in input array
+		actualTime += currInterval;
+	
+		//Make sure input doesn't go out of bounds
+		if(actualTime > array_size)
+			actualTime -=array_size;
+	
+		//Make sure interval doesn't go out of bounds
+			if(intervalIndex >= inter_size)
+				intervalIndex = 0;
+	
+		//Get value at actual point in input array
+			currValue = input[actualTime];
+	
+			memset(msg, 0, sizeof(msg));
+
+		printf("Current Value: %d\nOld Value: %d\n", currValue, oldValue);
+	
+		//Only send door state when state changes
+			if(currValue != oldValue)
+			{            
+			sprintf(msg,
+						"Type:currValue;Action:%d",
+						currValue);
+			}
+	
+		char* v = toString(currValue);
+		sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
+						sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
+		fprintf(log, "%s", log_msg);
+		fflush(log);
+		//Update the values
+		oldValue = currValue;
     }
      
     fclose(log);
