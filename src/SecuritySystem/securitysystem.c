@@ -7,6 +7,7 @@
 
 #include "gadgets.h"
 
+struct VECTORCLOCK vectorclock;
 GADGET *gadget_list[MAX_CONNECTIONS];
 int gadget_index = 0;
 
@@ -165,6 +166,7 @@ int main(int argc , char *argv[])
     // Register Message
     char msg[MSG_SIZE];
     char log_msg[MSG_SIZE];
+    char vc[MSG_SIZE];
     
     sprintf(msg, 
             "Type:register;Action:%s-%s-%d-%d",
@@ -174,13 +176,12 @@ int main(int argc , char *argv[])
     char *state = (char *)malloc(sizeof(char) * 3);
     strcpy(state,OFF);
 
-    // Initialize the vector clock, all counters are 0
-    VECTORCLOCK *vectorclock = malloc(sizeof(VECTORCLOCK));
-    vectorclock->door = 0;
-    vectorclock->motion = 0;
-    vectorclock->keyChain = 0;
-    vectorclock->gateway = 0;
-    vectorclock->securitySystem = 0;
+    // Initilize Vector Clock
+    vectorclock.door = 0;
+    vectorclock.motion = 0;
+    vectorclock.keyChain = 0;
+    vectorclock.gateway = 0;
+    vectorclock.securitySystem = 0;
     
     //fcntl(sock, F_SETFL, O_NONBLOCK);
     

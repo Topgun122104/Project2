@@ -8,10 +8,91 @@
 
 #include "gadgets.h"
 
+struct VECTORCLOCK vectorclock;
 GADGET *gadget_list[MAX_CONNECTIONS];
 int gadget_index = 0;
 int *input;
 int array_size; 
+
+// Updates the vector clock after it receives a message
+void updateVectorClock(char msg[]) {
+	char *temp, *t;
+
+	temp = strtok(msg, ",");
+	
+	if(NULL != temp) // door
+	{
+		t = strtok(NULL, ",");
+		int d = atoi(t);
+		vectorclock.door = max(vectorclock.door, d);
+	}
+	
+	t = strtok(temp, ",");
+	vectorclock.motion++;
+	
+	if(NULL != temp)
+	{
+		t = strtok(NULL, ",");
+		vectorclock.keyChain = max(vectorclock.keyChain, atoi(t));
+	}
+	
+	if(NULL != temp)
+	{
+		t = strtok(NULL, ",");
+		vectorclock.gateway = max(vectorclock.gateway, atoi(t));
+	}
+	
+	if(NULL != temp)
+	{
+		t = strtok(temp, ",");
+		vectorclock.securitySystem = max(vectorclock.securitySystem, atoi(t));
+	}
+	
+    char vc[MSG_SIZE];
+    sprintf(vc, "Motion VectorClock:%d,%d,%d,%d,%d,\n",
+			vectorclock.door, vectorclock.motion,
+			vectorclock.keyChain, vectorclock.gateway,
+			vectorclock.securitySystem);
+}
+
+int max(int x, int y) {
+	if(x >= y) 
+		return x;
+	else return y;
+}
+
+// Sends the series of unicast messages
+void sendMulticast(char msg[], int sock)
+{	
+	// Send remainder of multicast messages
+	int x;
+	for(x=0;x<gadget_index;x++)
+	{   
+		GADGET *gadget = gadget_list[x];
+		struct sockaddr_in addrDest;
+		
+		addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+		addrDest.sin_family = AF_INET;
+		addrDest.sin_port = htons(gadget->port);
+		
+		if( sendto(sock, msg , strlen(msg) , 0, 
+				(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+		{
+			puts("Send failed");
+			break;
+		} 
+		
+	}
+	
+    // Send Gateway Current Monitored Value
+	if(send(sock , msg , strlen(msg) , 0) < 0)
+	{
+	 	puts("Send failed"); 
+	 	//break;
+	 	//TODO this used to have a break statement, maybe return -1 if break? and
+	 	//  main actually breaks?
+	}
+}
 
 void saveDevices(char string[], char *ip, int port) 
 {
@@ -276,18 +357,18 @@ int main(int argc , char *argv[])
     // Register Message
     char msg[MSG_SIZE];
     char log_msg[MSG_SIZE];
+    char vc[MSG_SIZE];
 
     sprintf(msg,
             "Type:register;Action:%s-%s-%d-%d",
             s_type, s_ip, s_port, s_area);
     
-    // Initialize the vector clock, all counters are 0
-    VECTORCLOCK *vectorclock = malloc(sizeof(VECTORCLOCK));
-    vectorclock->door = 0;
-    vectorclock->motion = 0;
-    vectorclock->keyChain = 0;
-    vectorclock->gateway = 0;
-    vectorclock->securitySystem = 0;
+    // Initilize Vector Clock
+    vectorclock.door = 0;
+    vectorclock.motion = 0;
+    vectorclock.keyChain = 0;
+    vectorclock.gateway = 0;
+    vectorclock.securitySystem = 0;
 
     fcntl(sock, F_SETFL, O_NONBLOCK);
     
@@ -295,12 +376,9 @@ int main(int argc , char *argv[])
     {
         printf("\nSend to Gateway: %s\n",msg);
 
-        // Send Multicast Current Monitored Value and Update Vector Clock
-        if( send(sock , msg , strlen(msg) , 0) < 0)
-        {
-            puts("Send failed");
-            break;
-        }
+        
+        // Send multicast to all devices
+        sendMulticast(msg, sock);
         
         // Receive multicast messages from other devices
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
@@ -310,7 +388,15 @@ int main(int argc , char *argv[])
             
         	// The device list multicast message
         	if( strncmp( server_reply, "DeviceList", 10) == 0) 
+        	{
         		saveDevices(server_reply, s_ip, s_port);
+        	}
+        	
+        	else 
+        	{
+        		printf("Updating clock... \n");
+        		updateVectorClock(server_reply);
+        	}
         }
         
         // Wait for time interval (5 seconds default)

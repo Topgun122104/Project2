@@ -10,9 +10,58 @@
 
 // List of Devices and Sensors
 GADGET *gadget_list[MAX_CONNECTIONS];
+struct VECTORCLOCK vectorclock;
 int gadget_index = 0;
 int db_sock = -1;
 FILE *logFile;
+
+// Updates the vector clock after it receives a message
+void updateVectorClock(char msg[]) {
+	
+	char *temp, *t;
+
+	temp = strtok(msg, ",");
+	
+	if(NULL != temp) // door
+	{
+		t = strtok(NULL, ",");
+		int d = atoi(t);
+		vectorclock.door = max(vectorclock.door, d);
+	}
+	
+	if(NULL != temp)
+	{
+		t = strtok(NULL, ",");
+		vectorclock.motion = max(vectorclock.motion, atoi(t));
+	}
+	
+	if(NULL != temp)
+	{
+		t = strtok(NULL, ",");
+		vectorclock.keyChain = max(vectorclock.keyChain, atoi(t));
+	}
+	
+	t = strtok(temp, ",");
+	vectorclock.gateway++;
+	
+	if(NULL != temp)
+	{
+		t = strtok(temp, ",");
+		vectorclock.securitySystem = max(vectorclock.securitySystem, atoi(t));
+	}
+	
+    char vc[MSG_SIZE];
+    sprintf(vc, "Gateway VectorClock:%d,%d,%d,%d,%d,\n",
+			vectorclock.door, vectorclock.motion,
+			vectorclock.keyChain, vectorclock.gateway,
+			vectorclock.securitySystem);
+}
+
+int max(int x, int y) {
+	if(x >= y) 
+		return x;
+	else return y;
+}
 
 char* toString(int s, char* type)
 {
@@ -107,8 +156,6 @@ void sendDeviceListMulticast() {
 
         }
         deviceList[MSG_SIZE] = '\0';
-        printf("GADGET MESSAGE: %s\n", deviceList);
-
     }
         
     //Sending unicast for all devices with the deviceList
@@ -175,6 +222,7 @@ void printGadgets()
 // Get the Type and Action from a received command
 void getCommands(char string[], char **type, char **action)
 {
+	printf("command: %s\n", string);
     char *tok, *tok2;
 
     tok = strtok(string, ";");
@@ -191,6 +239,7 @@ void getCommands(char string[], char **type, char **action)
 
     if( NULL != tok2 )
         *action = strtok(NULL, ":");
+    
 }
 
 // Get the Information of a Device or Sensor
@@ -235,21 +284,24 @@ void *connection(void *skt_desc)
     int read_size;
     char *command, *action;
 
-    char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE];
+    char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE], cpy_msg[MSG_SIZE];
     char* log_msg;
+    char vc[MSG_SIZE];
 
     // Initilize Vector Clock
-    VECTORCLOCK *vectorclock = malloc(sizeof(VECTORCLOCK));
-    vectorclock->door = 0;
-    vectorclock->motion = 0;
-    vectorclock->keyChain = 0;
-    vectorclock->gateway = 0;
-    vectorclock->securitySystem = 0;
-
+    vectorclock.door = 0;
+    vectorclock.motion = 0;
+    vectorclock.keyChain = 0;
+    vectorclock.gateway = 0;
+    vectorclock.securitySystem = 0;
+    
     // Receive Data from Client
     while( (read_size = recv(client_skt_desc, client_msg, MSG_SIZE, 0)) > 0 )
     {
         memset(msg, 0, sizeof(msg));
+        memset(cpy_msg, 0, sizeof(cpy_msg));
+        strncpy(cpy_msg, client_msg, sizeof(client_msg));
+        
         printf("\nFROM CLIENT:\n%s\n\n",client_msg);
 
         getCommands(client_msg, &command, &action);
@@ -290,32 +342,42 @@ void *connection(void *skt_desc)
         // Current Temperature Value Case
         else if( strncmp(command, CMD_VALUE, strlen(CMD_VALUE)) == 0 ) 
         {
+    		printf("Updating clock2... %s\n", cpy_msg);
+    		if(strncmp(cpy_msg, "VectorClock", 11) == 0)
+    			updateVectorClock(cpy_msg);
+    		
             if( atoi(action) != gadget->currValue )
             {
                 puts("CHANGING"); 
                 gadget->currValue = atoi(action);
                 printGadgets();
             }
-	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 						gadget->port);
-	    fprintf(logFile, "%s", log_msg);
-	    fflush(logFile);
-	    write(db_sock, log_msg, strlen(log_msg));
+            
+			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 						gadget->port);
+			fprintf(logFile, "%s", log_msg);
+			fflush(logFile);
+			write(db_sock, log_msg, strlen(log_msg));
         }
 
         // Current State Case
         else if( strncmp( command, CMD_STATE, strlen(CMD_STATE) ) == 0 && 
                  strncmp( gadget->state, action, strlen(action) ) != 0 )
         {
+    		printf("Updating clock... %s\n", cpy_msg);
+    		if(strncmp(cpy_msg, "VectorClock", 11) == 0)
+    			updateVectorClock(cpy_msg);
+    		
             memset(gadget->state, 0, 3);
             strcpy(gadget->state, action);
             printGadgets();
-	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 							gadget->port);
-	    fprintf(logFile, "%s", log_msg);
-	    fflush(logFile);
-	    write(db_sock, log_msg, strlen(log_msg));
+			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 							gadget->port);
+			fprintf(logFile, "%s", log_msg);
+			fflush(logFile);
+			write(db_sock, log_msg, strlen(log_msg));
         }
 
         memset(out_msg, 0, sizeof(out_msg));
+        
             if( !isOn(gadget->state) )
             {
                 sprintf(out_msg,
