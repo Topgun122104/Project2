@@ -38,6 +38,26 @@ int max(int x, int y) {
 	else return y;
 }
 
+// Determines if intruder entered.
+// Intruder entered if 1st: open door, then motion sensed
+// Called when motion sensed and we check if door open
+int ifEntered() {
+	// Open log file
+	// Loop last 10 events?
+	// If last event is open, then 
+	
+	//return 1 if true;
+	//return 0 if not;
+	return 0;
+}
+
+// Determines if intruder left.
+// Intruder entered if 1st: motion sensed, then door opened
+// Called when door opens, and we check if motion sensed
+int ifLeft() {
+	return 0;
+}
+
 char* toString(int s, char* type)
 {
 	char *str = (char*)malloc(sizeof(char) * 6);
@@ -168,7 +188,7 @@ void printGadgets()
         GADGET *gadget = gadget_list[x];
 
         char msg[MSG_SIZE];
-	char* currStr = toString(gadget->currValue, gadget->gadgetType);
+        char* currStr = toString(gadget->currValue, gadget->gadgetType);
 
         if(isOn(gadget->state))
 	{
@@ -186,11 +206,8 @@ void printGadgets()
 		}
 
 	}
-
-
         puts(msg);        
     }
-
     puts("------------------------------------------------");
 }
 
@@ -351,17 +368,45 @@ void *connection(void *skt_desc)
     		//TODO need to log to log file here with timestamp and vector!
     		
         }
-
+        
+        // Check if user entered
+        if(strncmp( gadget->gadgetType, MOTION, strlen(MOTION) ) == 0 && 
+           strncmp( toString(gadget->currValue, gadget->gadgetType), TRU, strlen(TRU) ) == 0) 
+        {
+        	printf("MOTION IS TYPE AND TRUE");
+        	int i = ifEntered();
+        	
+        	if(i == 1) 
+        	{
+        		//Write to log saying "user came home"
+        		//turn security system off
+        	}
+        }
+        
+        // Check if user left
+        if( strncmp( gadget->gadgetType, DOOR, strlen(DOOR) ) == 0 &&
+            strncmp( toString(gadget->currValue, gadget->gadgetType), OPEN, strlen(OPEN) ) == 0) 
+        {
+        	printf("DOOR IS TYPE AND OPEN");
+        	int i = ifLeft();
+        	
+        	if(i == 1) {
+        		// Write to log saying "user lefT"
+        		// turn security system on 
+        	}
+        }
+        
         memset(out_msg, 0, sizeof(out_msg));
         
-            if( !isOn(gadget->state) )
-            {
-                sprintf(out_msg,
-                        "Type:%s;Action:%s",
-                        CMD_SWITCH, ON);
-                gadget->state = "on";
-            }
-            write(client_skt_desc, out_msg, strlen(out_msg));
+        if( !isOn(gadget->state) )
+        {
+            sprintf(out_msg,
+               "Type:%s;Action:%s",
+                CMD_SWITCH, ON);
+            gadget->state = "on";
+        }
+        
+        write(client_skt_desc, out_msg, strlen(out_msg));
 
         memset(client_msg, 0, sizeof(client_msg));
     }
