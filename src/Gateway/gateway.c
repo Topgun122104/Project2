@@ -129,8 +129,8 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 }
 
 // Send multicast to all devices, except database, with list of messages
-void sendDeviceListMulticast() {
-	
+void sendDeviceListMulticast() 
+{
 	char deviceList[MSG_SIZE];
 	int x;
 	strcpy(deviceList, "DeviceList");
@@ -285,7 +285,7 @@ void *connection(void *skt_desc)
     int read_size;
     char *command, *action;
 
-    char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE], cpy_msg[MSG_SIZE];
+    char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE], cpy_msg[MSG_SIZE], sec_msg[MSG_SIZE];
     char* log_msg;
     char vc[MSG_SIZE];
     
@@ -295,7 +295,7 @@ void *connection(void *skt_desc)
         printf("\nFROM CLIENT: %s\n\n",client_msg);
         memset(msg, 0, sizeof(msg));
         memset(cpy_msg, 0, sizeof(cpy_msg));
-        
+        memset(sec_msg, 0, sizeof(sec_msg));
         strncpy(cpy_msg, client_msg, sizeof(client_msg));
         
         getCommands(client_msg, &command, &action);
@@ -378,8 +378,30 @@ void *connection(void *skt_desc)
         	
         	if(i == 1) 
         	{
+        		sprintf(sec_msg, "Type:switch;Action:off");
+        		// Send turn on message to security system
+        		int x;
+        		for(x=0; x<gadget_index; x++)
+        		    {
+        		        GADGET *gadget = gadget_list[x];
+        		        
+        		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+        		        {
+        					struct sockaddr_in addrDest;
+        			
+        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        					addrDest.sin_family = AF_INET;
+        					addrDest.sin_port = htons(gadget->port);
+        					
+        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        							(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        					{
+        						puts("Send failed");
+        						break;
+        					} 
+        		        }
+        		    }	    
         		//Write to log saying "user came home"
-        		//turn security system off
         	}
         }
         
@@ -390,9 +412,31 @@ void *connection(void *skt_desc)
         	printf("DOOR IS TYPE AND OPEN");
         	int i = ifLeft();
         	
-        	if(i == 1) {
-        		// Write to log saying "user lefT"
-        		// turn security system on 
+        	if(i == 1) 
+        	{
+          		sprintf(sec_msg, "Type:switch;Action:off");
+        	    // Send turn on message to security system
+           		int x;
+          		for(x=0; x<gadget_index; x++)
+       		    {
+     		        GADGET *gadget = gadget_list[x];
+        	   		        
+      		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+    		        {
+      		        	struct sockaddr_in addrDest;        	  		
+      					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        	        	addrDest.sin_family = AF_INET;
+        	        	addrDest.sin_port = htons(gadget->port);
+        	        					
+        	        	if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        	        			(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        	       		{
+        	     			puts("Send failed");
+        	        		break;
+        	       		} 
+    		        }
+        	      }	    
+        	      //Write to log saying "user left"
         	}
         }
         

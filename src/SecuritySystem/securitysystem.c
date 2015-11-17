@@ -226,7 +226,7 @@ int main(int argc , char *argv[])
             puts("Send failed");
             break;
         }
-        
+        printf("\nSent: %s\n",msg);
         // Send multicast 
         if(gadget_index == 3)
         {
@@ -237,9 +237,7 @@ int main(int argc , char *argv[])
         				vectorclock.door, vectorclock.motion,
         				vectorclock.keyChain, vectorclock.gateway,
         				vectorclock.securitySystem);
-                	
-             printf("Vector clock message sending is: %s\n", vc);
-                	
+    	
             // Send multicast with msg to all devices
            //sendMulticast(vc, multiSock);
            
@@ -247,39 +245,37 @@ int main(int argc , char *argv[])
          	{
              	puts("Send failed"); 
                break;
-           }
+            }
+            printf("Vector clock message sending is: %s\n", vc);
         }
-        
-        printf("\nSent: %s\n",msg);
 
         // Receive server (gateway) response
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
         {
-            puts("Gateway reply:");
-            puts(server_reply);
+            printf("Gateway reply: %s", server_reply);
             
         	// The device list multicast message
         	if( strncmp( server_reply, "DeviceList", 10) == 0) 
         	{
         		saveDevices(server_reply, d_ip, d_port);
         	}
-        }
         
-        else 
-    	{
-			getCommands(server_reply,&type,&action);
+        	else 
+        	{
+        		printf("\nmade it to else\n");
+        		getCommands(server_reply,&type,&action);
+        		
+        		if ( strncmp( type, CMD_SWITCH, strlen(CMD_SWITCH) ) == 0 )
+        		{
+        			printf("Device Switching State\n");
+        			strcpy(state, action);
+        			printf("NEW STATE: %s\n", state);
 	
-			if ( strncmp( type, CMD_SWITCH, strlen(CMD_SWITCH) ) == 0 )
-			{
-				puts("Device Switching State");
-				strcpy(state, action);
-				puts("NEW STATE:");
-				puts(state);
-	
-			sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
+        			sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
 						sock, d_type, state, (unsigned)time(NULL), d_ip, d_port);
-			fprintf(log, "%s", log_msg);
-			fflush(log);
+        			fprintf(log, "%s", log_msg);
+        			fflush(log);
+        		}
 			}	
 	
 			memset(msg, 0, sizeof(msg));
@@ -287,14 +283,15 @@ int main(int argc , char *argv[])
 			sprintf(msg,
 					"Type:%s;Action:%s",
 					CMD_STATE, state);
-    	}
-        
+    	
+        }
+        /*
         // Receive multicast messages from other devices ?
         if( recv(multiSock, server_reply, MSG_SIZE, 0) > 0)
         {
         		printf("Updating clock... \n");
         		updateVectorClock(server_reply);
-        }
+        }*/
         
         
 
