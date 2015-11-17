@@ -10,14 +10,13 @@
 
 // List of Devices and Sensors
 GADGET *gadget_list[MAX_CONNECTIONS];
-struct VECTORCLOCK vectorclock = {0};
+struct VECTORCLOCK vectorclock;
 int gadget_index = 0;
 int db_sock = -1;
 FILE *logFile;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char msg[]) {
-		
 	vectorclock.door = max(vectorclock.door, msg[0] - '0');
 	vectorclock.motion = max(vectorclock.motion, msg[2]  - '0');
 	vectorclock.keyChain = max(vectorclock.keyChain, msg[4] - '0');
@@ -30,7 +29,7 @@ void updateVectorClock(char msg[]) {
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
-    printf("Updated vector in Gateway is: %s\n", vc);
+    printf("\nUpdated vector in Gateway is: %s\n", vc);
 }
 
 int max(int x, int y) {
@@ -198,7 +197,6 @@ void printGadgets()
 // Get the Type and Action from a received command
 void getCommands(char string[], char **type, char **action)
 {
-	printf("command: %s\n", string);
     char *tok, *tok2, *tok3, *tok4, *vector;
 
     tok = strtok(string, ";");
@@ -284,7 +282,6 @@ void *connection(void *skt_desc)
         strncpy(cpy_msg, client_msg, sizeof(client_msg));
         
         getCommands(client_msg, &command, &action);
-        printf("COMMAD: %s   ACTION: %s\n\n", command, action);
 
         // Register Case
         if( strncmp(command, CMD_REGISTER, strlen(CMD_REGISTER)) == 0 )
@@ -350,20 +347,8 @@ void *connection(void *skt_desc)
         
         // vectorClock state case
         else if ( strncmp( command, CMD_VECTOR, strlen(CMD_VECTOR) ) == 0) 
-        {
-    		printf("Updating clock... %s\n", cpy_msg);
-    			updateVectorClock(cpy_msg);
-    		
-    		memset(msg, 0, sizeof(msg));
-    		sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
-    				vectorclock.door, vectorclock.motion,
-    				vectorclock.keyChain, vectorclock.gateway,
-   					vectorclock.securitySystem);
-   
-    		//sprintf(log_msg, "Type:vectorClock;%s;%u\n", vc, (unsigned)time(NULL));
-    		//fprintf(logFile, "%s", log_msg);
-    		//fflush(logFile);
-    		//write(db_sock, log_msg, strlen(log_msg));    		
+        {    		
+    		//TODO need to log to log file here with timestamp and vector!
     		
         }
 
@@ -489,7 +474,9 @@ int main( int argc, char *argv[] )
     size = sizeof( struct sockaddr_in );
 
     pthread_t thread;
-
+    
+    memset(&vectorclock, 0, sizeof(vectorclock));
+    vectorclock = (struct VECTORCLOCK){0};
     // Initilize Vector Clock
     vectorclock.door = 0;
     vectorclock.motion = 0;

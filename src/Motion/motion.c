@@ -392,7 +392,7 @@ int main(int argc , char *argv[])
         				vectorclock.keyChain, vectorclock.gateway,
         				vectorclock.securitySystem);
                 	
-             printf("Vector clock message sending is: %s", vc);
+             printf("Vector clock message sending is: %s\n", vc);
                 	
             // Send multicast with msg to all devices
            //sendMulticast(vc, multiSock);
@@ -413,7 +413,6 @@ int main(int argc , char *argv[])
         	// The device list multicast message
         	if( strncmp( server_reply, "DeviceList", 10) == 0) 
         	{
-        		printf("Received device list\n");
         		saveDevices(server_reply, s_ip, s_port);
         	}
         }
@@ -421,7 +420,6 @@ int main(int argc , char *argv[])
         // Receive multicast messages from other devices ?
         if( recv(multiSock, server_reply, MSG_SIZE, 0) > 0)
         {
-        		printf("Updating clock... \n");
         		updateVectorClock(server_reply);
         }
         
