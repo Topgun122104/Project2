@@ -10,51 +10,27 @@
 
 // List of Devices and Sensors
 GADGET *gadget_list[MAX_CONNECTIONS];
-struct VECTORCLOCK vectorclock;
+struct VECTORCLOCK vectorclock = {0};
 int gadget_index = 0;
 int db_sock = -1;
 FILE *logFile;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char msg[]) {
-	
-	char *temp, *t;
-
-	temp = strtok(msg, ",");
-	
-	if(NULL != temp) // door
-	{
-		t = strtok(NULL, ",");
-		int d = atoi(t);
-		vectorclock.door = max(vectorclock.door, d);
-	}
-	
-	if(NULL != temp)
-	{
-		t = strtok(NULL, ",");
-		vectorclock.motion = max(vectorclock.motion, atoi(t));
-	}
-	
-	if(NULL != temp)
-	{
-		t = strtok(NULL, ",");
-		vectorclock.keyChain = max(vectorclock.keyChain, atoi(t));
-	}
-	
-	t = strtok(temp, ",");
+		
+	vectorclock.door = max(vectorclock.door, msg[0] - '0');
+	vectorclock.motion = max(vectorclock.motion, msg[2]  - '0');
+	vectorclock.keyChain = max(vectorclock.keyChain, msg[4] - '0');
+	//vectorclock.gateway = max(vectorclock.gateway, msg[6] - '0');
 	vectorclock.gateway++;
-	
-	if(NULL != temp)
-	{
-		t = strtok(temp, ",");
-		vectorclock.securitySystem = max(vectorclock.securitySystem, atoi(t));
-	}
+	vectorclock.securitySystem = max(vectorclock.securitySystem, msg[7] - '0');
 	
     char vc[MSG_SIZE];
-    sprintf(vc, "Gateway VectorClock:%d,%d,%d,%d,%d,\n",
+    sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
+    printf("Updated vector in Gateway is: %s\n", vc);
 }
 
 int max(int x, int y) {
@@ -223,13 +199,16 @@ void printGadgets()
 void getCommands(char string[], char **type, char **action)
 {
 	printf("command: %s\n", string);
-    char *tok, *tok2;
+    char *tok, *tok2, *tok3, *tok4, *vector;
 
     tok = strtok(string, ";");
 
     if( NULL != tok )
         tok2 = strtok(NULL, ";");
-
+    
+    if( NULL != tok2 )
+    	tok3 = strtok(NULL, ";");
+    
     tok = strtok(tok, ":");
 
     if( NULL != tok )
@@ -240,6 +219,13 @@ void getCommands(char string[], char **type, char **action)
     if( NULL != tok2 )
         *action = strtok(NULL, ":");
     
+    if( NULL != tok3 )
+    	tok3 = strtok(tok3, ":");
+    
+    if( NULL != tok3 ) {
+    	vector = strtok(NULL, ":");
+    	updateVectorClock(vector);
+    } 
 }
 
 // Get the Information of a Device or Sensor
@@ -282,29 +268,23 @@ void *connection(void *skt_desc)
     gadget->id = client_skt_desc;
 
     int read_size;
-    char *command, *action;;
+    char *command, *action;
 
     char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE], cpy_msg[MSG_SIZE];
     char* log_msg;
     char vc[MSG_SIZE];
-
-    // Initilize Vector Clock
-    vectorclock.door = 0;
-    vectorclock.motion = 0;
-    vectorclock.keyChain = 0;
-    vectorclock.gateway = 0;
-    vectorclock.securitySystem = 0;
     
     // Receive Data from Client
-    while( (read_size = recv(client_skt_desc, client_msg, MSG_SIZE, 0)) > 0 )
+    while( (read_size = recv(client_skt_desc, client_msg, sizeof(client_msg), 0)) > 0 )
     {
+        printf("\nFROM CLIENT: %s\n\n",client_msg);
         memset(msg, 0, sizeof(msg));
         memset(cpy_msg, 0, sizeof(cpy_msg));
+        
         strncpy(cpy_msg, client_msg, sizeof(client_msg));
         
-        printf("\nFROM CLIENT:\n%s\n\n",client_msg);
-
         getCommands(client_msg, &command, &action);
+        printf("COMMAD: %s   ACTION: %s\n\n", command, action);
 
         // Register Case
         if( strncmp(command, CMD_REGISTER, strlen(CMD_REGISTER)) == 0 )
@@ -369,10 +349,21 @@ void *connection(void *skt_desc)
         }
         
         // vectorClock state case
-        else if ( strncmp( command, CMD_VECTOR, strlen(CMD_VECTOR)) == 0) 
+        else if ( strncmp( command, CMD_VECTOR, strlen(CMD_VECTOR) ) == 0) 
         {
     		printf("Updating clock... %s\n", cpy_msg);
     			updateVectorClock(cpy_msg);
+    		
+    		memset(msg, 0, sizeof(msg));
+    		sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
+    				vectorclock.door, vectorclock.motion,
+    				vectorclock.keyChain, vectorclock.gateway,
+   					vectorclock.securitySystem);
+   
+    		//sprintf(log_msg, "Type:vectorClock;%s;%u\n", vc, (unsigned)time(NULL));
+    		//fprintf(logFile, "%s", log_msg);
+    		//fflush(logFile);
+    		//write(db_sock, log_msg, strlen(log_msg));    		
     		
         }
 
@@ -388,7 +379,6 @@ void *connection(void *skt_desc)
             write(client_skt_desc, out_msg, strlen(out_msg));
 
         memset(client_msg, 0, sizeof(client_msg));
-	
     }
 
     if( read_size == 0 ) 
@@ -500,6 +490,13 @@ int main( int argc, char *argv[] )
 
     pthread_t thread;
 
+    // Initilize Vector Clock
+    vectorclock.door = 0;
+    vectorclock.motion = 0;
+    vectorclock.keyChain = 0;
+    vectorclock.gateway = 0;
+    vectorclock.securitySystem = 0;
+    
     // Complete Connection with a Client
     while( client_skt_desc = accept(skt_desc, (struct sockaddr *) &client_skt, (socklen_t *) &size) )
     {

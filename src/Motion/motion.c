@@ -16,43 +16,20 @@ int array_size;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char msg[]) {
-	char *temp, *t;
-
-	temp = strtok(msg, ",");
-	
-	if(NULL != temp) // door
-	{
-		t = strtok(NULL, ",");
-		int d = atoi(t);
-		vectorclock.door = max(vectorclock.door, d);
-	}
-	
-	t = strtok(temp, ",");
+		
+	vectorclock.door = max(vectorclock.door, msg[0] - '0');
 	vectorclock.motion++;
-	
-	if(NULL != temp)
-	{
-		t = strtok(NULL, ",");
-		vectorclock.keyChain = max(vectorclock.keyChain, atoi(t));
-	}
-	
-	if(NULL != temp)
-	{
-		t = strtok(NULL, ",");
-		vectorclock.gateway = max(vectorclock.gateway, atoi(t));
-	}
-	
-	if(NULL != temp)
-	{
-		t = strtok(temp, ",");
-		vectorclock.securitySystem = max(vectorclock.securitySystem, atoi(t));
-	}
+	//vectorclock.motion = max(vectorclock.motion, msg[2]  - '0');
+	vectorclock.keyChain = max(vectorclock.keyChain, msg[4] - '0');
+	vectorclock.gateway = max(vectorclock.gateway, msg[6] - '0');
+	vectorclock.securitySystem = max(vectorclock.securitySystem, msg[7] - '0');
 	
     char vc[MSG_SIZE];
-    sprintf(vc, "VectorClock:%d,%d,%d,%d,%d,\n",
+    sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
+    printf("Updated vector in Gateway is: %s\n", vc);
 }
 
 int max(int x, int y) {
@@ -64,6 +41,8 @@ int max(int x, int y) {
 // Sends the series of unicast messages
 void sendMulticast(char msg[], int sock)
 {	
+	printf("Trying to send multicast\n");
+
 	// Send remainder of multicast messages
 	int x;
 	for(x=0;x<gadget_index;x++)
@@ -71,31 +50,30 @@ void sendMulticast(char msg[], int sock)
 		GADGET *gadget = gadget_list[x];
 		struct sockaddr_in addrDest;
 		
+		printf("SENDINT TO IP: %s\b", gadget->ip);
 		addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
 		addrDest.sin_family = AF_INET;
 		addrDest.sin_port = htons(gadget->port);
 		
+	    //Connect to remote server
+	    if (connect(sock , (struct sockaddr *)&addrDest , sizeof(addrDest)) < 0)
+	    {
+	        perror("Connect failed. Error");
+	        break;
+	    }
+	    
 		if( sendto(sock, msg , strlen(msg) , 0, 
-				(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+				(struct sockaddr *)&addrDest, sizeof(addrDest)) < 0)
 		{
 			puts("Send failed");
 			break;
 		} 
-		
-	}
-	
-    // Send Gateway Current Monitored Value
-	if(send(sock , msg , strlen(msg) , 0) < 0)
-	{
-	 	puts("Send failed"); 
-	 	//break;
-	 	//TODO this used to have a break statement, maybe return -1 if break? and
-	 	//  main actually breaks?
 	}
 }
 
 void saveDevices(char string[], char *ip, int port) 
 {
+	printf("Saving devices\n");
 	char *token, *t, *p;
 	int x;
 	
@@ -115,7 +93,7 @@ void saveDevices(char string[], char *ip, int port)
 			gadget->port = port;
 		}
 		
-		if (strncmp(ip, gadget->ip, strlen(ip)) != 0)
+		if (port != gadget->port)
 			gadget_list[gadget_index++] = gadget;
 	}
 }
@@ -278,6 +256,7 @@ int main(int argc , char *argv[])
     }
 
     port = (unsigned short int) atoi(token);
+    printf("PORT IS : %i\n\n\n", port);
 
     // Device Info Parsing
     char *s_token, *s_token2, *s_token3, *s_type, *s_ip;
@@ -308,8 +287,11 @@ int main(int argc , char *argv[])
     }
 
     int sock;
+    int multiSock;
+    
     struct sockaddr_in server;
-    //char message[1000];
+    struct sockaddr_in addrDest;
+    
     char *message;
     char server_reply[MSG_SIZE];
      
@@ -319,11 +301,23 @@ int main(int argc , char *argv[])
     {
         printf("Could not create socket");
     }
-    puts("Socket created");
+    printf("Socket created: %i\n", sock);
+    
+    //Create socket
+    multiSock = socket(AF_INET , SOCK_STREAM , 0);
+    if (multiSock == -1)
+    {
+        printf("Could not create socket");
+    }
+    printf("Socket2  created: %d\n", multiSock);
      
     server.sin_addr.s_addr = inet_addr( ip );
     server.sin_family = AF_INET;
     server.sin_port = htons( port );
+    
+	addrDest.sin_addr.s_addr = inet_addr( ip );
+	addrDest.sin_family = AF_INET;
+	addrDest.sin_port = htons(5997);
  
     //Connect to remote server
     if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
@@ -371,6 +365,7 @@ int main(int argc , char *argv[])
     vectorclock.securitySystem = 0;
 
     fcntl(sock, F_SETFL, O_NONBLOCK);
+    fcntl(multiSock, F_SETFL, O_NONBLOCK);
     
     while(1)
     {
@@ -384,10 +379,11 @@ int main(int argc , char *argv[])
         }
                 
         memset(vc, 0, sizeof(vc));
-            	
+
         // Send multicast 
-        if(gadget_index != 0)
+        if(gadget_index == 3)
         {
+        	printf("Updating vector clock!\n");
             vectorclock.motion++;
 
             sprintf(vc,
@@ -399,10 +395,16 @@ int main(int argc , char *argv[])
              printf("Vector clock message sending is: %s", vc);
                 	
             // Send multicast with msg to all devices
-           sendMulticast(vc, sock);
+           //sendMulticast(vc, multiSock);
+           
+         	if(send(sock , vc , strlen(vc) , 0) < 0)
+         	{
+             	puts("Send failed"); 
+               break;
+           }
         }
         
-        // Receive multicast messages from other devices
+        // Receive server (gateway) response
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
         {
             puts("Gateway reply:");
@@ -411,14 +413,16 @@ int main(int argc , char *argv[])
         	// The device list multicast message
         	if( strncmp( server_reply, "DeviceList", 10) == 0) 
         	{
+        		printf("Received device list\n");
         		saveDevices(server_reply, s_ip, s_port);
         	}
-        	
-        	else 
-        	{
+        }
+        
+        // Receive multicast messages from other devices ?
+        if( recv(multiSock, server_reply, MSG_SIZE, 0) > 0)
+        {
         		printf("Updating clock... \n");
         		updateVectorClock(server_reply);
-        	}
         }
         
         // Wait for time interval (5 seconds default)
