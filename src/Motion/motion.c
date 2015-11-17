@@ -294,6 +294,7 @@ int main(int argc , char *argv[])
     
     char *message;
     char server_reply[MSG_SIZE];
+    char reply[MSG_SIZE];
      
     //Create socket
     sock = socket(AF_INET , SOCK_STREAM , 0);
@@ -304,7 +305,7 @@ int main(int argc , char *argv[])
     printf("Socket created: %i\n", sock);
     
     //Create socket
-    multiSock = socket(AF_INET , SOCK_STREAM , 0);
+    multiSock = socket(AF_INET , SOCK_DGRAM , 0);
     if (multiSock == -1)
     {
         printf("Could not create socket");
@@ -417,12 +418,54 @@ int main(int argc , char *argv[])
         	}
         }
         
-        // Receive multicast messages from other devices ?
-        if( recv(multiSock, server_reply, MSG_SIZE, 0) > 0)
+        if(gadget_index == 3)
         {
-        		updateVectorClock(server_reply);
+        	int sock;
+        	struct sockaddr_in server, sender;
+        	char server_reply[512];
+        	
+        	sock = socket(AF_INET, SOCK_DGRAM, 0);
+        	if(sock == -1)
+        	{
+        		puts("Could not create socket");
+        	}
+        	puts("Socket created");
+        	
+        	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+        	server.sin_family = AF_INET;
+        	server.sin_port = htons(9999);
+        	
+        	if( bind(sock, (struct sockaddr *)&server, sizeof(server)) < 0)
+        	{
+        		puts("ERRROR");
+        	}
+        	size_t sock_size = sizeof(struct sockaddr_in);
+        	while(1)
+        	{
+        		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+        		printf("\n\n RECEVIED IT WORKED!!!!!!!!!!!!!!!!!!!!%s\n\n", server_reply);
+        	}
+        	/*
+        	int x;
+        	for(x=0;x<gadget_index;x++)
+        	{   
+        		GADGET *gadget = gadget_list[x];
+        		struct sockaddr_in sender;
+        		socklen_t sendsize = sizeof(sender);
+        		bzero(&sender, sizeof(sender));
+        		
+        		printf("TRYING TO RECV FROM IP: %s PORT: %i\n", gadget->ip, gadget->port);
+        		printf("gadget size is: %i\n", gadget_index);
+       			
+        	while(1) {
+			// Receive multicast messages from other devices ?
+			if( recvfrom(multiSock, reply, MSG_SIZE, 0, (struct sockaddr*)&sender, &sendsize) > 0)
+			{
+					printf("ACTUALLY MADE IT!!!!");
+					updateVectorClock(server_reply);
+			}
+        	} }*/
         }
-        
         // Wait for time interval (5 seconds default)
         sleep(interval);
 
