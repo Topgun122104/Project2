@@ -39,57 +39,35 @@ int max(int x, int y) {
 }
 
 // Sends the series of unicast messages
-void sendMulticast(char vectorMsg[], int s)
+void sendMulticast(char *vectorMsg, int s)
 {	
+	
 	printf("TRYING TO SEND MULTICAST\n");
-	
-	int sock;
-	struct sockaddr_in server;
-	sock = socket(AF_INET,SOCK_DGRAM, 0);
-	if (sock == -1)
-		puts("couldnt create socket");
-	
-	puts("socket created!");
-	
-	server.sin_addr.s_addr = inet_addr("127.0.0.1");
-	server.sin_family = AF_INET;
-	server.sin_port = htons(9999);
-	
-	char *msg = "TEST";
-	
-	if( sendto(sock, msg, strlen(msg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
-		puts("\n send failed");
-	
-	printf("DONE WITH SEND\n");
-	
-	// Send remainder of multicast messages
-	/*
 	int x;
 	for(x=0;x<gadget_index;x++)
-	{   
+	{
+		int sock;
+		struct sockaddr_in server;
+		sock = socket(AF_INET,SOCK_DGRAM, 0);
+		
+		if (sock == -1)
+			puts("couldnt create socket");
+		
+		puts("socket created!");
+		
+		printf("vc is: %s vc len: %lu", vectorMsg, strlen(vectorMsg));
 		GADGET *gadget = gadget_list[x];
-		struct sockaddr_in addrDest;
-		printf("gadget size is: %i\n", gadget_index);
-
-		printf("sending to ip: %s, port:%i \n", gadget->ip, gadget->port);
-		addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
-		addrDest.sin_family = AF_INET;
-		addrDest.sin_port = htons(gadget->port);
+		server.sin_addr.s_addr = inet_addr(gadget->ip);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(gadget->port);
 		
-		printf("still sending to ip\n");
+		char *msg = "TEST";
 		
-		if( sendto(sock, vectorMsg , strlen(vectorMsg) , 0, 
-				(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
-		{
-			puts("Send failed");
-			break;
-		} else {
-			printf("DIDN'T BREAK!!!!! \n");
-		}
+		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
+			puts("\n send failed");
 		
+		printf("DONE WITH SEND\n");
 	}
-	*/
-	
 }
 
 void saveDevices(char string[], char *ip, int port) 
@@ -367,7 +345,8 @@ int main(int argc , char *argv[])
     // Register Message
     char msg[MSG_SIZE];
     char log_msg[MSG_SIZE];
-    char vc[MSG_SIZE];
+    //char vc[MSG_SIZE];
+    char *vc;
 
     sprintf(msg,
             "Type:register;Action:%s-%s-%d-%d",
@@ -407,8 +386,8 @@ int main(int argc , char *argv[])
              printf("Vector clock: %s\n", vc);
                 	
             // Send multicast with msg to all devices
-           sendMulticast(vc, sock);
-           
+            sendMulticast(vc, sock);
+                         
          	if(send(sock , vc , strlen(vc) , 0) < 0)
          	{
              	puts("Send failed"); 

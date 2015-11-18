@@ -209,6 +209,38 @@ void getCommands(char string[], char **type, char **action)
         *action = strtok(NULL, ":");
 }
 
+void deviceListener(int port)
+{
+	printf("Device listener!\n");
+	int sock;
+	struct sockaddr_in server, sender;
+	char server_reply[512];
+	
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+	puts("Socket created");
+	
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_family = AF_INET;
+	server.sin_port = htons(5998);
+	
+	if( bind(sock, (struct sockaddr *)&server, sizeof(server)) < 0)
+	{
+		puts("ERRROR");
+	}
+	size_t sock_size = sizeof(struct sockaddr_in);
+	
+	while(1)
+	{
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("\n\n%s\n\n", server_reply);
+		printf("size is: %lu", sizeof(server_reply));
+	}
+}
+
 int main(int argc , char *argv[])
 {
     FILE *fp = fopen(argv[1],"r");
@@ -420,31 +452,18 @@ int main(int argc , char *argv[])
         
         if(gadget_index == 3)
         {
-        	int sock;
-        	struct sockaddr_in server, sender;
-        	char server_reply[512];
-        	
-        	sock = socket(AF_INET, SOCK_DGRAM, 0);
-        	if(sock == -1)
-        	{
-        		puts("Could not create socket");
-        	}
-        	puts("Socket created");
-        	
-        	server.sin_addr.s_addr = inet_addr("127.0.0.1");
-        	server.sin_family = AF_INET;
-        	server.sin_port = htons(9999);
-        	
-        	if( bind(sock, (struct sockaddr *)&server, sizeof(server)) < 0)
-        	{
-        		puts("ERRROR");
-        	}
-        	size_t sock_size = sizeof(struct sockaddr_in);
-        	while(1)
-        	{
-        		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-        		printf("\n\n RECEVIED IT WORKED!!!!!!!!!!!!!!!!!!!!%s\n\n", server_reply);
-        	}
+        	printf("CREATING THREAD\n\n");
+            pthread_t dev1_thread, dev2_thread, dev3_thread;
+            int *port = malloc(sizeof(int));
+            int p = 5998;
+            *port = p;
+            
+            
+            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, port) < 0 )
+            {
+                perror("Thread Creation Failed");
+                return 1;
+            }
         	/*
         	int x;
         	for(x=0;x<gadget_index;x++)
