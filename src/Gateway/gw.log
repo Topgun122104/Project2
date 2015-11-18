@@ -1925,3 +1925,208 @@ Type:insert;Action:6,Motion,True,1447819028,127.0.0.1,5998
 Type:insert;Action:7,Keychain,True,1447819030,127.0.0.1,5997
 Type:insert;Action:6,Motion,False,1447819033,127.0.0.1,5998
 Type:insert;Action:7,Keychain,False,1447819035,127.0.0.1,5997
+Type:insert;Action:5,Motion,True,1447879792,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879797,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879802,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879807,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879812,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879817,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879822,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879827,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879832,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879837,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879842,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879847,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879852,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879857,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879862,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879867,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447879867,127.0.0.1,5996
+User Came Home 1447879867Type:insert;Action:5,Motion,True,1447879872,127.0.0.1,5998
+ALARM SOUNDED!! 1447879872Type:insert;Action:5,Motion,False,1447879877,127.0.0.1,5998
+Type:insert;Action:6,Door,Close,1447879877,127.0.0.1,5996
+Type:insert;Action:5,Motion,False,1447879882,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447879882,127.0.0.1,5996
+User Came Home 1447879882Type:insert;Action:5,Motion,False,1447879887,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879892,127.0.0.1,5998
+ALARM SOUNDED!! 1447879892Type:insert;Action:6,Door,Close,1447879894,127.0.0.1,5996
+Type:insert;Action:5,Motion,True,1447879897,127.0.0.1,5998
+ALARM SOUNDED!! 1447879897Type:insert;Action:5,Motion,False,1447879902,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447879904,127.0.0.1,5996
+User Came Home 1447879904Type:insert;Action:5,Motion,False,1447879907,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879912,127.0.0.1,5998
+ALARM SOUNDED!! 1447879912Type:insert;Action:6,Door,Close,1447879914,127.0.0.1,5996
+Type:insert;Action:5,Motion,True,1447879917,127.0.0.1,5998
+ALARM SOUNDED!! 1447879917Type:insert;Action:6,Door,Open,1447879919,127.0.0.1,5996
+User Came Home 1447879919Type:insert;Action:5,Motion,True,1447879922,127.0.0.1,5998
+ALARM SOUNDED!! 1447879922Type:insert;Action:5,Motion,False,1447879927,127.0.0.1,5998
+Type:insert;Action:6,Door,Close,1447879931,127.0.0.1,5996
+Type:insert;Action:5,Motion,False,1447879932,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879937,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447879941,127.0.0.1,5996
+User Came Home 1447879941Type:insert;Action:5,Motion,True,1447879942,127.0.0.1,5998
+ALARM SOUNDED!! 1447879942Type:insert;Action:5,Motion,True,1447879947,127.0.0.1,5998
+ALARM SOUNDED!! 1447879947Type:insert;Action:6,Door,Close,1447879951,127.0.0.1,5996
+Type:insert;Action:5,Motion,False,1447879952,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447879956,127.0.0.1,5996
+User Came Home 1447879956Type:insert;Action:5,Motion,False,1447879957,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447879962,127.0.0.1,5998
+ALARM SOUNDED!! 1447879962Type:insert;Action:5,Motion,True,1447879967,127.0.0.1,5998
+ALARM SOUNDED!! 1447879967Type:insert;Action:6,Door,Close,1447879968,127.0.0.1,5996
+Type:insert;Action:5,Motion,True,1447879972,127.0.0.1,5998
+ALARM SOUNDED!! 1447879972Type:insert;Action:5,Motion,False,1447879977,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447879978,127.0.0.1,5996
+User Came Home 1447879978Type:insert;Action:5,Motion,False,1447879982,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447879987,127.0.0.1,5998
+Type:insert;Action:6,Door,Close,1447879988,127.0.0.1,5996
+Type:insert;Action:5,Motion,True,1447879992,127.0.0.1,5998
+ALARM SOUNDED!! 1447879992Type:insert;Action:6,Door,Open,1447879993,127.0.0.1,5996
+User Came Home 1447879993Type:insert;Action:5,Motion,True,1447879997,127.0.0.1,5998
+ALARM SOUNDED!! 1447879997Type:insert;Action:5,Motion,False,1447880002,127.0.0.1,5998
+Type:insert;Action:6,Door,Close,1447880005,127.0.0.1,5996
+Type:insert;Action:5,Motion,False,1447880007,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447880012,127.0.0.1,5998
+ALARM SOUNDED!! 1447880012Type:insert;Action:6,Door,Open,1447880015,127.0.0.1,5996
+User Came Home 1447880015Type:insert;Action:5,Motion,True,1447880017,127.0.0.1,5998
+ALARM SOUNDED!! 1447880017Type:insert;Action:5,Motion,True,1447880022,127.0.0.1,5998
+ALARM SOUNDED!! 1447880022Type:insert;Action:6,Door,Close,1447880025,127.0.0.1,5996
+Type:insert;Action:5,Motion,False,1447880027,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447880030,127.0.0.1,5996
+User Came Home 1447880030Type:insert;Action:5,Motion,False,1447880032,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447880037,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447880042,127.0.0.1,5998
+ALARM SOUNDED!! 1447880042Type:insert;Action:6,Door,Close,1447880042,127.0.0.1,5996
+Type:insert;Action:5,Motion,True,1447880047,127.0.0.1,5998
+ALARM SOUNDED!! 1447880047Type:insert;Action:5,Motion,False,1447880052,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447880052,127.0.0.1,5996
+User Came Home 1447880052Type:insert;Action:5,Motion,False,1447880057,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447880062,127.0.0.1,5998
+ALARM SOUNDED!! 1447880062Type:insert;Action:6,Door,Close,1447880062,127.0.0.1,5996
+Type:insert;Action:5,Motion,True,1447880067,127.0.0.1,5998
+ALARM SOUNDED!! 1447880067Type:insert;Action:6,Door,Open,1447880067,127.0.0.1,5996
+User Came Home 1447880067Type:insert;Action:5,Motion,True,1447880072,127.0.0.1,5998
+ALARM SOUNDED!! 1447880072Type:insert;Action:5,Motion,False,1447880077,127.0.0.1,5998
+Type:insert;Action:6,Door,Close,1447880079,127.0.0.1,5996
+Type:insert;Action:5,Motion,False,1447880082,127.0.0.1,5998
+Type:insert;Action:5,Motion,False,1447880087,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447880089,127.0.0.1,5996
+User Came Home 1447880089Type:insert;Action:5,Motion,True,1447880092,127.0.0.1,5998
+ALARM SOUNDED!! 1447880092Type:insert;Action:5,Motion,True,1447880097,127.0.0.1,5998
+ALARM SOUNDED!! 1447880097Type:insert;Action:6,Door,Close,1447880099,127.0.0.1,5996
+Type:insert;Action:5,Motion,False,1447880102,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447880104,127.0.0.1,5996
+User Came Home 1447880104Type:insert;Action:5,Motion,False,1447880107,127.0.0.1,5998
+Type:insert;Action:5,Motion,True,1447880112,127.0.0.1,5998
+ALARM SOUNDED!! 1447880112Type:insert;Action:6,Door,Close,1447880116,127.0.0.1,5996
+Type:insert;Action:5,Motion,True,1447880117,127.0.0.1,5998
+ALARM SOUNDED!! 1447880117Type:insert;Action:5,Motion,True,1447880122,127.0.0.1,5998
+ALARM SOUNDED!! 1447880122Type:insert;Action:7,Keychain,True,1447880221,127.0.0.1,5997
+Type:insert;Action:7,Keychain,True,1447880226,127.0.0.1,5997
+Type:insert;Action:7,Keychain,False,1447880231,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447880232,127.0.0.1,5996
+User Came Home 1447880232Type:insert;Action:7,Keychain,False,1447880236,127.0.0.1,5997
+Type:insert;Action:7,Keychain,True,1447880241,127.0.0.1,5997
+Type:insert;Action:6,Door,Close,1447880242,127.0.0.1,5996
+Type:insert;Action:7,Keychain,True,1447880246,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447880247,127.0.0.1,5996
+User Came Home 1447880247Type:insert;Action:7,Keychain,True,1447880251,127.0.0.1,5997
+Type:insert;Action:7,Keychain,False,1447880256,127.0.0.1,5997
+Type:insert;Action:6,Door,Close,1447880259,127.0.0.1,5996
+Type:insert;Action:7,Keychain,False,1447880261,127.0.0.1,5997
+Type:insert;Action:7,Keychain,False,1447880266,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447880269,127.0.0.1,5996
+User Came Home 1447880269Type:insert;Action:8,Motion,True,1447880270,127.0.0.1,5998
+ALARM SOUNDED!! 1447880270Type:insert;Action:7,Keychain,True,1447880271,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447880275,127.0.0.1,5998
+ALARM SOUNDED!! 1447880275Type:insert;Action:7,Keychain,True,1447880276,127.0.0.1,5997
+Type:insert;Action:6,Door,Close,1447880279,127.0.0.1,5996
+Type:insert;Action:8,Motion,False,1447880280,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447880281,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447880284,127.0.0.1,5996
+User Came Home 1447880284Type:insert;Action:8,Motion,False,1447880285,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447880286,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447880290,127.0.0.1,5998
+ALARM SOUNDED!! 1447880290Type:insert;Action:7,Keychain,True,1447880291,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447880295,127.0.0.1,5998
+ALARM SOUNDED!! 1447880295Type:insert;Action:7,Keychain,True,1447880296,127.0.0.1,5997
+Type:insert;Action:6,Door,Close,1447880296,127.0.0.1,5996
+Type:insert;Action:8,Motion,True,1447880300,127.0.0.1,5998
+ALARM SOUNDED!! 1447880300Type:insert;Action:7,Keychain,True,1447880301,127.0.0.1,5997
+Type:insert;Action:8,Motion,False,1447880305,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447880306,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447880306,127.0.0.1,5996
+User Came Home 1447880306Type:insert;Action:8,Motion,False,1447880310,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447880311,127.0.0.1,5997
+Type:insert;Action:8,Motion,False,1447880315,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447880316,127.0.0.1,5997
+Type:insert;Action:6,Door,Close,1447880316,127.0.0.1,5996
+Type:insert;Action:8,Motion,True,1447880320,127.0.0.1,5998
+ALARM SOUNDED!! 1447880320Type:insert;Action:7,Keychain,True,1447880321,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447880321,127.0.0.1,5996
+User Came Home 1447880321Type:insert;Action:8,Motion,True,1447880325,127.0.0.1,5998
+ALARM SOUNDED!! 1447880325Type:insert;Action:7,Keychain,True,1447880326,127.0.0.1,5997
+Type:insert;Action:9,SecurityDevice,off,1447880328,127.0.0.1,5999
+Gateway VectorClock:0-0-0-0-0,
+Type:insert;Action:7,Keychain,True,1447881189,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447881194,127.0.0.1,5996
+User Came Home 1447881194Type:insert;Action:7,Keychain,True,1447881194,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881196,127.0.0.1,5998
+ALARM SOUNDED!! 1447881196Type:insert;Action:7,Keychain,False,1447881199,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881201,127.0.0.1,5998
+ALARM SOUNDED!! 1447881201Type:insert;Action:6,Door,Close,1447881204,127.0.0.1,5996
+Type:insert;Action:7,Keychain,False,1447881204,127.0.0.1,5997
+Type:insert;Action:8,Motion,False,1447881206,127.0.0.1,5998
+Type:insert;Action:6,Door,Open,1447881209,127.0.0.1,5996
+User Came Home 1447881209Type:insert;Action:7,Keychain,True,1447881209,127.0.0.1,5997
+Type:insert;Action:8,Motion,False,1447881211,127.0.0.1,5998
+Type:insert;Action:7,Keychain,True,1447881214,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881216,127.0.0.1,5998
+ALARM SOUNDED!! 1447881216Type:insert;Action:7,Keychain,True,1447881219,127.0.0.1,5997
+Type:insert;Action:6,Door,Close,1447881221,127.0.0.1,5996
+Type:insert;Action:8,Motion,True,1447881221,127.0.0.1,5998
+ALARM SOUNDED!! 1447881221Type:insert;Action:7,Keychain,False,1447881224,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881226,127.0.0.1,5998
+ALARM SOUNDED!! 1447881226Type:insert;Action:7,Keychain,False,1447881229,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447881231,127.0.0.1,5996
+User Came Home 1447881231Type:insert;Action:8,Motion,False,1447881231,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447881234,127.0.0.1,5997
+Type:insert;Action:8,Motion,False,1447881236,127.0.0.1,5998
+Type:insert;Action:7,Keychain,True,1447881239,127.0.0.1,5997
+Type:insert;Action:6,Door,Close,1447881241,127.0.0.1,5996
+Type:insert;Action:8,Motion,False,1447881241,127.0.0.1,5998
+Type:insert;Action:7,Keychain,True,1447881244,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447881246,127.0.0.1,5996
+User Came Home 1447881246Type:insert;Action:8,Motion,True,1447881246,127.0.0.1,5998
+Type:insert;Action:9,SecurityDevice,off,1447881248,127.0.0.1,5999
+Gateway VectorClock:0-0-0-0-0,
+Type:insert;Action:7,Keychain,True,1447881374,127.0.0.1,5997
+Type:insert;Action:7,Keychain,True,1447881379,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881381,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447881384,127.0.0.1,5997
+Type:insert;Action:6,Door,Open,1447881384,127.0.0.1,5996
+User Came Home 1447881384Type:insert;Action:8,Motion,True,1447881386,127.0.0.1,5998
+ALARM SOUNDED!! 1447881386Type:insert;Action:9,SecurityDevice,off,1447881387,127.0.0.1,5999
+Gateway VectorClock:0-0-0-0-0,
+Type:insert;Action:6,Keychain,True,1447881645,127.0.0.1,5997
+Type:insert;Action:6,Keychain,True,1447881650,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881654,127.0.0.1,5998
+Type:insert;Action:6,Keychain,False,1447881655,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881659,127.0.0.1,5998
+Type:insert;Action:6,Keychain,False,1447881660,127.0.0.1,5997
+Type:insert;Action:7,Door,Open,1447881663,127.0.0.1,5996
+User Came Home 1447881663Type:insert;Action:8,Motion,False,1447881664,127.0.0.1,5998
+Type:insert;Action:6,Keychain,True,1447881665,127.0.0.1,5997
+Type:insert;Action:8,Motion,False,1447881669,127.0.0.1,5998
+Type:insert;Action:6,Keychain,True,1447881670,127.0.0.1,5997
+Type:insert;Action:7,Door,Close,1447881673,127.0.0.1,5996
+Type:insert;Action:8,Motion,True,1447881674,127.0.0.1,5998
+ALARM SOUNDED!! 1447881674Type:insert;Action:6,Keychain,True,1447881675,127.0.0.1,5997
+Type:insert;Action:7,Door,Open,1447881678,127.0.0.1,5996
+User Came Home 1447881678Type:insert;Action:8,Motion,True,1447881679,127.0.0.1,5998
+ALARM SOUNDED!! 1447881679Type:insert;Action:6,Keychain,False,1447881680,127.0.0.1,5997
+Type:insert;Action:8,Motion,True,1447881684,127.0.0.1,5998
+ALARM SOUNDED!! 1447881684Type:insert;Action:6,Keychain,False,1447881685,127.0.0.1,5997
+Type:insert;Action:8,Motion,False,1447881689,127.0.0.1,5998
+Type:insert;Action:7,Door,Close,1447881690,127.0.0.1,5996
+Type:insert;Action:6,Keychain,False,1447881690,127.0.0.1,5997
+Type:insert;Action:9,SecurityDevice,off,1447881692,127.0.0.1,5999

@@ -393,14 +393,14 @@ void *connection(void *skt_desc)
         // vectorClock state case
         else if ( strncmp( command, CMD_VECTOR, strlen(CMD_VECTOR) ) == 0) 
         {
-		    sprintf(log_msg, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
-			vectorclock.door, vectorclock.motion,
-			vectorclock.keyChain, vectorclock.gateway,
-			vectorclock.securitySystem); 
+		   // sprintf(log_msg, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
+		//	vectorclock.door, vectorclock.motion,
+		//	vectorclock.keyChain, vectorclock.gateway,
+		//	vectorclock.securitySystem); 
 
-		    fprintf(logFile, "%s", log_msg);
-		    fflush(logFile);
-		    write(db_sock, log_msg, strlen(log_msg));
+		  //  fprintf(logFile, "%s", log_msg);
+		  //  fflush(logFile);
+		  //  write(db_sock, log_msg, strlen(log_msg));
     		
         }
         

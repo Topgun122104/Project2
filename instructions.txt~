@@ -1,0 +1,27 @@
+Step 1: Open terminal and navigate to the Project2 folder
+
+Step 2: run ./compile.sh
+
+Step 3: navigate to the output folder
+
+Step 4: run ./gateway <Gateway Config File location> <Gateway Log File Location>
+
+Step 5: Open new terminal and navigate to the output folder
+
+Step 6: run ./database <Database Config File Location> <Database Log File location>
+
+Step 7: Open new terminal and navigate to the output folder
+
+Step 8: run ./motion <Motion Config File Location> <Motion Input File Location> <Motion Log File Location>
+
+Step 9: Open new terminal and navigate to the output folder
+
+Step 10: run ./keychain <Keychain Config File Location> <Keychain Input File Location> <Keychain Log File Location>
+
+Step 11: Open new terminal and navigate to the output folder
+
+Step 12: run ./door <Door Config File Location> <Door Input File Location> <Door Log File Location>
+
+Step 13: Open new terminal and navigate to the output folder
+
+Step 14: run ./securitysystem <Security System Config File Location> <Security System Log File Location>
