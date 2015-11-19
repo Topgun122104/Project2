@@ -29,7 +29,7 @@ void updateVectorClock(char msg[]) {
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
-    printf("\nUpdated vector in Gateway is: %s\n", vc);
+    printf("\nUpdated vector is: %s\n", vc);
 }
 
 int max(int x, int y) {

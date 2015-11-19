@@ -35,6 +35,29 @@ int max(int x, int y) {
 	else return y;
 }
 
+// Sends the series of unicast messages
+void sendMulticast(char *vectorMsg, int s)
+{	
+	int x;
+	for(x=0;x<gadget_index;x++)
+	{
+		int sock;
+		struct sockaddr_in server;
+		sock = socket(AF_INET,SOCK_DGRAM, 0);
+		
+		if (sock == -1)
+			puts("couldnt create socket");
+				
+		GADGET *gadget = gadget_list[x];
+		server.sin_addr.s_addr = inet_addr(gadget->ip);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(gadget->port);
+				
+		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
+			puts("\n send failed");
+	}
+}
+
 void saveDevices(char string[], char *ip, int port) 
 {
 	printf("Saving devices\n");
@@ -82,6 +105,35 @@ void getCommands(char string[], char **type, char **action)
 
     if( NULL != a )
         *action = strtok(NULL, ":");
+}
+
+void deviceListener(void *ptr)
+{
+	int port = *((int *)ptr);
+	int sock;
+	struct sockaddr_in server, sender;
+	char server_reply[512];
+	
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+	
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_family = AF_INET;
+	server.sin_port = htons(port);
+	
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+	
+	while(1)
+	{
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("\nReceived multicast msg: %s\n\n", server_reply);
+		//TODO UPDATE VECTOR
+	}
 }
 
 int main(int argc , char *argv[])
@@ -161,7 +213,7 @@ int main(int argc , char *argv[])
         d_area = atoi(strtok(NULL, ":"));
     }
 
-    int sock, multiSock;
+    int sock;
     struct sockaddr_in server;
     char server_reply[MSG_SIZE];
      
@@ -172,14 +224,6 @@ int main(int argc , char *argv[])
         printf("Could not create socket");
     }
     puts("Socket created");
-     
-    //Create socket
-    multiSock = socket(AF_INET , SOCK_STREAM , 0);
-        if (multiSock == -1)
-        {
-            printf("Could not create socket");
-        }
-    printf("Socket2  created: %d\n", multiSock);
     
     server.sin_addr.s_addr = inet_addr( ip );
     server.sin_family = AF_INET;
@@ -210,6 +254,8 @@ int main(int argc , char *argv[])
     strcpy(state,OFF);
 
     // Initilize Vector Clock
+    memset(&vectorclock, 0, sizeof(vectorclock));
+    vectorclock = (struct VECTORCLOCK){0};
     vectorclock.door = 0;
     vectorclock.motion = 0;
     vectorclock.keyChain = 0;
@@ -226,7 +272,9 @@ int main(int argc , char *argv[])
             puts("Send failed");
             break;
         }
+        
         printf("\nSent: %s\n",msg);
+        
         // Send multicast 
         if(gadget_index == 3)
         {
@@ -239,7 +287,7 @@ int main(int argc , char *argv[])
         				vectorclock.securitySystem);
     	
             // Send multicast with msg to all devices
-           //sendMulticast(vc, multiSock);
+           sendMulticast(vc, sock);
            
          	if(send(sock , vc , strlen(vc) , 0) < 0)
          	{
@@ -285,16 +333,17 @@ int main(int argc , char *argv[])
 					CMD_STATE, state);
     	
         }
-        /*
-        // Receive multicast messages from other devices ?
-        if( recv(multiSock, server_reply, MSG_SIZE, 0) > 0)
+        
+        if(gadget_index == 3)
         {
-        		printf("Updating clock... \n");
-        		updateVectorClock(server_reply);
-        }*/
-        
-        
-
+            pthread_t dev1_thread;
+            
+            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &d_port) < 0 )
+            {
+                perror("Thread Creation Failed");
+                return 1;
+            }
+        }
     }
     
     fclose(log); 

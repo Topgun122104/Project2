@@ -41,6 +41,29 @@ int max(int x, int y) {
 	else return y;
 }
 
+// Sends the series of unicast messages
+void sendMulticast(char *vectorMsg, int s)
+{	
+	int x;
+	for(x=0;x<gadget_index;x++)
+	{
+		int sock;
+		struct sockaddr_in server;
+		sock = socket(AF_INET,SOCK_DGRAM, 0);
+		
+		if (sock == -1)
+			puts("couldnt create socket");
+				
+		GADGET *gadget = gadget_list[x];
+		server.sin_addr.s_addr = inet_addr(gadget->ip);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(gadget->port);
+				
+		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
+			puts("\n send failed");
+	}
+}
+
 void saveDevices(char string[], char *ip, int port) 
 {
 	printf("Saving devices\n");
@@ -219,6 +242,35 @@ void getCommands(char string[], char **type, char **action)
         *action = strtok(NULL, ":");
 }
 
+void deviceListener(void *ptr)
+{
+	int port = *((int *)ptr);
+	int sock;
+	struct sockaddr_in server, sender;
+	char server_reply[512];
+	
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+	
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_family = AF_INET;
+	server.sin_port = htons(port);
+	
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+	
+	while(1)
+	{
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("\nReceived multicast msg: %s\n\n", server_reply);
+		//TODO UPDATE VECTOR
+	}
+}
+
 int main(int argc , char *argv[])
 {
     FILE *fp = fopen(argv[1],"r");
@@ -295,7 +347,7 @@ int main(int argc , char *argv[])
         s_area = atoi(strtok(NULL, ","));
     }
 
-    int sock, multiSock;
+    int sock;
     struct sockaddr_in server;
     //char message[1000];
     char *message;
@@ -308,14 +360,6 @@ int main(int argc , char *argv[])
         printf("Could not create socket");
     }
     puts("Socket created");
-    
-    //Create socket
-    multiSock = socket(AF_INET , SOCK_STREAM , 0);
-        if (multiSock == -1)
-        {
-            printf("Could not create socket");
-        }
-    printf("Socket2  created: %d\n", multiSock);
      
     server.sin_addr.s_addr = inet_addr( ip );
     server.sin_family = AF_INET;
@@ -355,13 +399,15 @@ int main(int argc , char *argv[])
             s_type, s_ip, s_port, s_area);
 
     // Initilize Vector Clock
+    memset(&vectorclock, 0, sizeof(vectorclock));
+    vectorclock = (struct VECTORCLOCK){0};
     vectorclock.door = 0;
     vectorclock.motion = 0;
     vectorclock.keyChain = 0;
     vectorclock.gateway = 0;
     vectorclock.securitySystem = 0;
     
-    fcntl(sock, F_SETFL, O_NONBLOCK);
+    //fcntl(sock, F_SETFL, O_NONBLOCK);
     
     while(1)
     {
@@ -388,7 +434,7 @@ int main(int argc , char *argv[])
              printf("Vector clock message sending is: %s\n", vc);
                 	
             // Send multicast with msg to all devices
-           //sendMulticast(vc, multiSock);
+           sendMulticast(vc, sock);
            
          	if(send(sock , vc , strlen(vc) , 0) < 0)
          	{
@@ -410,14 +456,27 @@ int main(int argc , char *argv[])
         	}
         }
         
+        fcntl(sock, F_SETFL, O_NONBLOCK);
+        
         // Receive multicast messages from other devices ?
-        if( recv(multiSock, server_reply, MSG_SIZE, 0) > 0)
+        if( recv(sock, server_reply, MSG_SIZE, 0) > 0)
         {
         		printf("Updating clock... \n");
         		updateVectorClock(server_reply);
         }
         
-		printf("Current Interval: %d\n", inter[intervalIndex]);
+        if(gadget_index == 3)
+        {
+            pthread_t dev1_thread;
+            
+            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &s_port) < 0 )
+            {
+                perror("Thread Creation Failed");
+                return 1;
+            }
+        }
+        
+		//printf("Current Interval: %d\n", inter[intervalIndex]);
 		
 		// Wait for time interval (5 seconds default)
 		int currInterval = inter[intervalIndex++];

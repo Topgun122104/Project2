@@ -29,7 +29,7 @@ void updateVectorClock(char msg[]) {
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
-    printf("Updated vector in Gateway is: %s\n", vc);
+    printf("Updated vectorclock: %s\n", vc);
 }
 
 int max(int x, int y) {
@@ -41,8 +41,6 @@ int max(int x, int y) {
 // Sends the series of unicast messages
 void sendMulticast(char *vectorMsg, int s)
 {	
-	
-	printf("TRYING TO SEND MULTICAST\n");
 	int x;
 	for(x=0;x<gadget_index;x++)
 	{
@@ -52,21 +50,14 @@ void sendMulticast(char *vectorMsg, int s)
 		
 		if (sock == -1)
 			puts("couldnt create socket");
-		
-		puts("socket created!");
-		
-		printf("vc is: %s vc len: %lu", vectorMsg, strlen(vectorMsg));
+				
 		GADGET *gadget = gadget_list[x];
 		server.sin_addr.s_addr = inet_addr(gadget->ip);
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gadget->port);
-		
-		char *msg = "TEST";
-		
+				
 		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
 			puts("\n send failed");
-		
-		printf("DONE WITH SEND\n");
 	}
 }
 
@@ -211,6 +202,35 @@ void getCommands(char string[], char **type, char **action)
         *action = strtok(NULL, ":");
 }
 
+void deviceListener(void *ptr)
+{
+	int port = *((int *)ptr);
+	int sock;
+	struct sockaddr_in server, sender;
+	char server_reply[512];
+	
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+	
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_family = AF_INET;
+	server.sin_port = htons(port);
+	
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+	
+	while(1)
+	{
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("\nReceived multicast msg: %s\n\n", server_reply);
+		updateVectorClock(server_reply);
+	}
+}
+
 int main(int argc , char *argv[])
 {
     FILE *fp = fopen(argv[1],"r");
@@ -287,7 +307,7 @@ int main(int argc , char *argv[])
         s_area = atoi(strtok(NULL, ","));
     }
 
-    int sock, multiSock;
+    int sock;
     struct sockaddr_in server;
     //char message[1000];
     char *message;
@@ -300,14 +320,6 @@ int main(int argc , char *argv[])
         printf("Could not create socket");
     }
     puts("Socket created");
-    
-    //Create socket
-    multiSock = socket(AF_INET , SOCK_DGRAM , 0);
-        if (multiSock == -1)
-        {
-            printf("Could not create socket");
-        }
-    printf("Socket2  created: %d\n", multiSock);
      
     server.sin_addr.s_addr = inet_addr( ip );
     server.sin_family = AF_INET;
@@ -345,21 +357,22 @@ int main(int argc , char *argv[])
     // Register Message
     char msg[MSG_SIZE];
     char log_msg[MSG_SIZE];
-    //char vc[MSG_SIZE];
-    char *vc;
+    char vc[MSG_SIZE];
 
     sprintf(msg,
             "Type:register;Action:%s-%s-%d-%d",
             s_type, s_ip, s_port, s_area);
     
     // Initilize Vector Clock
+    memset(&vectorclock, 0, sizeof(vectorclock));
+    vectorclock = (struct VECTORCLOCK){0};
     vectorclock.door = 0;
     vectorclock.motion = 0;
     vectorclock.keyChain = 0;
     vectorclock.gateway = 0;
     vectorclock.securitySystem = 0;
 
-    fcntl(sock, F_SETFL, O_NONBLOCK);
+    //fcntl(sock, F_SETFL, O_NONBLOCK);
     
     while(1)
     {
@@ -395,6 +408,8 @@ int main(int argc , char *argv[])
             }
         }
         
+        fcntl(sock, F_SETFL, O_NONBLOCK);
+        
         // Receive server (gateway) response
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
         {
@@ -407,12 +422,17 @@ int main(int argc , char *argv[])
         		saveDevices(server_reply, s_ip, s_port);
         	}
         }
-        /*
-        // Receive multicast messages from other devices ?
-        if( recv(multiSock, server_reply, MSG_SIZE, 0) > 0)
+                
+        if(gadget_index == 3)
         {
-        		updateVectorClock(server_reply);
-        }*/
+            pthread_t dev1_thread;
+            
+            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &s_port) < 0 )
+            {
+                perror("Thread Creation Failed");
+                return 1;
+            }
+        }
 
         // Wait for time interval (5 seconds default)
         sleep(interval);
