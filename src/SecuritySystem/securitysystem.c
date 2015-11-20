@@ -142,9 +142,12 @@ void deviceListener(void *ptr)
 	
 	while(1)
 	{
+		char *command, *action;
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
 		printf("\nReceived multicast msg: %s\n\n", server_reply);
-		//TODO UPDATE VECTOR
+		getCommands(server_reply, &command, &action);
+		printf("Action: %s\n", action);
+		updateVectorClock(action);
 	}
 }
 
@@ -304,7 +307,7 @@ int main(int argc , char *argv[])
            
          	if(send(sock , vc , strlen(vc) , 0) < 0)
          	{
-             	puts("Send failed"); 
+             	puts("Send failed2"); 
                break;
             }
             printf("Vector clock message sending is: %s\n", vc);
