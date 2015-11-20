@@ -431,12 +431,12 @@ void *connection(void *skt_desc)
         // vectorClock state case
         else if ( strncmp( command, CMD_VECTOR, strlen(CMD_VECTOR) ) == 0) 
         {    		
-    		sprintf(log_msg, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
+    		sprintf(log_msg, "Gateway VectorClock:%d-%d-%d-%d-%d",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem); 
 
-		    fprintf(logFile, "%s", log_msg);
+		    fprintf(logFile, "%s\n", log_msg);
 		    fflush(logFile);
 		    write(db_sock, log_msg, strlen(log_msg));
     		
@@ -452,8 +452,8 @@ void *connection(void *skt_desc)
 		if(ifIntruder())
 		{
 			puts("Intruder Alert!!");
-			char* gw_log_msg = "ALARM SOUNDED!!";
-			char* db_log_msg = "Type:insert;Action:ALARM SOUNDED!";
+			char* gw_log_msg = "ALARM SOUNDED!!\n";
+			char* db_log_msg = "Type:insert;Action:ALARM SOUNDED!\n";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 			fflush(logFile);
 			write(db_sock, db_log_msg, strlen(db_log_msg));
@@ -485,8 +485,8 @@ void *connection(void *skt_desc)
         		        }
         		}
 	    
-        		char* gw_log_msg = "User Came Home";
-			char* db_log_msg = "Type:insert;Action:User Came Home!";
+        		char* gw_log_msg = "User Came Home\n";
+			char* db_log_msg = "Type:insert;Action:User Came Home!\n";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 			fflush(logFile);
 			write(db_sock, db_log_msg, strlen(db_log_msg));
@@ -497,7 +497,7 @@ void *connection(void *skt_desc)
         if( strncmp( gadget->gadgetType, DOOR, strlen(DOOR) ) == 0 &&
             strncmp( toString(gadget->currValue, gadget->gadgetType), OPEN, strlen(OPEN) ) == 0) 
         {
-        	printf("DOOR IS TYPE AND OPEN");
+        	printf("DOOR IS TYPE AND OPEN\n");
         	if(userHome()) 
         	{
 			puts("User Home!");
@@ -523,8 +523,8 @@ void *connection(void *skt_desc)
         	       		} 
     		        }
         	      }	    
-        	      char* gw_log_msg = "User Came Home";
-		      char* db_log_msg = "Type:insert;Action:User Came Home!";
+        	      char* gw_log_msg = "User Came Home\n";
+		      char* db_log_msg = "Type:insert;Action:User Came Home!\n";
 		      fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 		      fflush(logFile);
 		      write(db_sock, db_log_msg, strlen(db_log_msg));
@@ -554,8 +554,8 @@ void *connection(void *skt_desc)
         	       		} 
     		        }
         	      }	    
-        	      char* gw_log_msg = "User Left Home";
-		      char* db_log_msg = "Type:insert;Action:User Left Home!";
+        	      char* gw_log_msg = "User Left Home\n";
+		      char* db_log_msg = "Type:insert;Action:User Left Home!\n";
 		      fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 		      fflush(logFile);
 		      write(db_sock, db_log_msg, strlen(db_log_msg));
