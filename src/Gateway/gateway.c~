@@ -26,20 +26,33 @@ unsigned int keychainTime = -1;
 int currSystem = 0;
 
 // Updates the vector clock after it receives a message
-void updateVectorClock(char msg[]) {
-	vectorclock.door = max(vectorclock.door, msg[0] - '0');
-	vectorclock.motion = max(vectorclock.motion, msg[2]  - '0');
-	vectorclock.keyChain = max(vectorclock.keyChain, msg[4] - '0');
-	//vectorclock.gateway = max(vectorclock.gateway, msg[6] - '0');
+void updateVectorClock(char* msg) {
+	printf("msg is : %s\n", msg);
+	int d, m, k, g, s;
+
+    	d = atoi(strtok(msg, "-"));
+
+    	m = atoi(strtok(NULL, "-"));
+
+    	k = atoi(strtok(NULL, "-"));
+
+    	g = atoi(strtok(NULL, "-"));
+
+    	s = atoi(strtok(NULL, "-"));
+		
+	vectorclock.door = max(vectorclock.door, d);
 	vectorclock.gateway++;
-	vectorclock.securitySystem = max(vectorclock.securitySystem, msg[7] - '0');
+	vectorclock.motion = max(vectorclock.motion, m);
+	vectorclock.keyChain = max(vectorclock.keyChain, k);
+	//vectorclock.gateway = max(vectorclock.gateway, g);
+	vectorclock.securitySystem = max(vectorclock.securitySystem, s);
 	
     char vc[MSG_SIZE];
     sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
-    printf("\nUpdated vector is: %s\n", vc);
+    printf("Updated vector in Gateway is: %s\n", vc);
 }
 
 int max(int x, int y) {

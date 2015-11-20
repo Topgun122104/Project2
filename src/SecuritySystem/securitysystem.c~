@@ -55,7 +55,7 @@ void sendMulticast(char *vectorMsg, int s)
 	{
 		int sock;
 		struct sockaddr_in server;
-		sock = socket(AF_INET,SOCK_DGRAM, 0);
+		sock = socket(AF_INET,SOCK_STREAM, 0);
 		
 		if (sock == -1)
 			puts("couldnt create socket");
@@ -65,7 +65,7 @@ void sendMulticast(char *vectorMsg, int s)
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gadget->port);
 				
-		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
+		if( send(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
 			puts("\n send failed");
 	}
 }

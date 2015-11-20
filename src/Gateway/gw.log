@@ -2041,3 +2041,86 @@ Type:insert;Action:7,Motion,True,1447933842,127.0.0.1,5998
 Type:insert;Action:8,Keychain,False,1447933845,127.0.0.1,5997
 Type:insert;Action:7,Motion,False,1447933847,127.0.0.1,5998
 Type:insert;Action:8,Keychain,True,1447933850,127.0.0.1,5997
+Type:insert;Action:7,Motion,True,1447974321,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447974325,127.0.0.1,5997
+Type:insert;Action:7,Motion,True,1447974326,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447974330,127.0.0.1,5997
+Type:insert;Action:7,Motion,False,1447974331,127.0.0.1,5998
+Type:insert;Action:8,Keychain,False,1447974335,127.0.0.1,5997
+Type:insert;Action:7,Motion,False,1447974336,127.0.0.1,5998
+Type:insert;Action:6,SecurityDevice,offType,1447974337,127.0.0.1,5999
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:8,Keychain,False,1447974340,127.0.0.1,5997
+Type:insert;Action:7,Motion,True,1447974341,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447974345,127.0.0.1,5997
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:7,Motion,True,1447974346,127.0.0.1,5998
+Type:insert;Action:7,Motion,True,1447983909,127.0.0.1,5998
+Type:insert;Action:7,Motion,True,1447983914,127.0.0.1,5998
+Type:insert;Action:7,Motion,False,1447983919,127.0.0.1,5998
+Type:insert;Action:7,Motion,False,1447983924,127.0.0.1,5998
+Type:insert;Action:7,Motion,True,1447983929,127.0.0.1,5998
+Type:insert;Action:7,Motion,True,1447983934,127.0.0.1,5998
+Type:insert;Action:7,Motion,True,1447983939,127.0.0.1,5998
+Type:insert;Action:7,Motion,False,1447983944,127.0.0.1,5998
+Type:insert;Action:7,Motion,False,1447983949,127.0.0.1,5998
+Type:insert;Action:7,Motion,False,1447983954,127.0.0.1,5998
+Type:insert;Action:7,Motion,True,1447983959,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447983963,127.0.0.1,5997
+Type:insert;Action:7,Motion,True,1447983964,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447983968,127.0.0.1,5997
+Type:insert;Action:7,Motion,False,1447983969,127.0.0.1,5998
+Type:insert;Action:8,Keychain,False,1447983973,127.0.0.1,5997
+Type:insert;Action:7,Motion,False,1447983974,127.0.0.1,5998
+Type:insert;Action:8,Keychain,False,1447983978,127.0.0.1,5997
+Type:insert;Action:7,Motion,True,1447983979,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447983983,127.0.0.1,5997
+Type:insert;Action:7,Motion,True,1447983984,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447983988,127.0.0.1,5997
+Type:insert;Action:7,Motion,True,1447983989,127.0.0.1,5998
+Type:insert;Action:6,SecurityDevice,offType,1447983991,127.0.0.1,5999
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:8,Keychain,True,1447983993,127.0.0.1,5997
+Type:insert;Action:7,Motion,False,1447983994,127.0.0.1,5998
+Type:insert;Action:8,Keychain,False,1447983998,127.0.0.1,5997
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:7,Motion,False,1447983999,127.0.0.1,5998
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:8,Keychain,True,1447984678,127.0.0.1,5997
+Type:insert;Action:8,Keychain,True,1447984683,127.0.0.1,5997
+Type:insert;Action:8,Keychain,False,1447984688,127.0.0.1,5997
+Type:insert;Action:8,Keychain,False,1447984693,127.0.0.1,5997
+Type:insert;Action:6,SecurityDevice,offType,1447984696,127.0.0.1,5999
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:8,Keychain,True,1447984698,127.0.0.1,5997
+Type:insert;Action:9,Motion,True,1447984701,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447984703,127.0.0.1,5997
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:9,Motion,True,1447984706,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447985611,127.0.0.1,5997
+Type:insert;Action:8,Keychain,True,1447985616,127.0.0.1,5997
+Type:insert;Action:8,Keychain,False,1447985621,127.0.0.1,5997
+Type:insert;Action:6,SecurityDevice,offType,1447985624,127.0.0.1,5999
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:8,Keychain,False,1447985626,127.0.0.1,5997
+Type:insert;Action:9,Motion,True,1447985629,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447985631,127.0.0.1,5997
+Gateway VectorClock:0-0-0-1-0,
+Type:insert;Action:6,SecurityDevice,offType,1447986200,127.0.0.1,5999
+Gateway VectorClock:0-0-0-1-1,
+Type:insert;Action:8,Keychain,True,1447986203,127.0.0.1,5997
+Type:insert;Action:9,Motion,True,1447986205,127.0.0.1,5998
+Type:insert;Action:8,Keychain,True,1447986208,127.0.0.1,5997
+Gateway VectorClock:0-0-0-1-1,
+Type:insert;Action:7,Keychain,True,1447986412,127.0.0.1,5997
+Type:insert;Action:7,Keychain,True,1447986417,127.0.0.1,5997
+Type:insert;Action:7,Keychain,False,1447986422,127.0.0.1,5997
+Type:insert;Action:7,Keychain,False,1447986427,127.0.0.1,5997
+Type:insert;Action:7,Keychain,True,1447986432,127.0.0.1,5997
+Type:insert;Action:7,Keychain,True,1447986437,127.0.0.1,5997
+Type:insert;Action:6,SecurityDevice,offType,1447986440,127.0.0.1,5999
+Gateway VectorClock:0-0-0-1-1,
+Type:insert;Action:7,Keychain,True,1447986442,127.0.0.1,5997
+Type:insert;Action:9,Motion,True,1447986445,127.0.0.1,5998
+Type:insert;Action:7,Keychain,False,1447986447,127.0.0.1,5997
+Gateway VectorClock:0-0-0-1-1,

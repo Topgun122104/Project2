@@ -15,14 +15,26 @@ int *input;
 int array_size; 
 
 // Updates the vector clock after it receives a message
-void updateVectorClock(char msg[]) {
-	printf("msg is : %s", msg);	
-	vectorclock.door = max(vectorclock.door, msg[0] - '0');
+void updateVectorClock(char* msg) {
+	printf("msg is : %s\n", msg);
+	int d, m, k, g, s;
+
+    	d = atoi(strtok(msg, "-"));
+
+    	m = atoi(strtok(NULL, "-"));
+
+    	k = atoi(strtok(NULL, "-"));
+
+    	g = atoi(strtok(NULL, "-"));
+
+    	s = atoi(strtok(NULL, "-"));
+		
+	vectorclock.door = max(vectorclock.door, d);
 	vectorclock.motion++;
-	//vectorclock.motion = max(vectorclock.motion, msg[2]  - '0');
-	vectorclock.keyChain = max(vectorclock.keyChain, msg[4] - '0');
-	vectorclock.gateway = max(vectorclock.gateway, msg[6] - '0');
-	vectorclock.securitySystem = max(vectorclock.securitySystem, msg[8] - '0');
+	//vectorclock.motion = max(vectorclock.motion, m);
+	vectorclock.keyChain = max(vectorclock.keyChain, k);
+	vectorclock.gateway = max(vectorclock.gateway, g);
+	vectorclock.securitySystem = max(vectorclock.securitySystem, s);
 	
     char vc[MSG_SIZE];
     sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
@@ -222,9 +234,12 @@ void deviceListener(void *ptr)
 	
 	while(1)
 	{
+		char *command, *action;
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
 		printf("\nReceived multicast msg: %s\n\n", server_reply);
-		updateVectorClock(server_reply);
+		getCommands(server_reply, &command, &action);
+		printf("Action: %s\n", action);
+		updateVectorClock(action);
 	}
 }
 
