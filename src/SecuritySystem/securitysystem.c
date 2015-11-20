@@ -50,6 +50,7 @@ int max(int x, int y) {
 // Sends the series of unicast messages
 void sendMulticast(char *vectorMsg, int s)
 {	
+	printf("SOCKET IS: %i\n\n", s);
 	int x;
 	for(x=0;x<gadget_index;x++)
 	{
@@ -61,7 +62,7 @@ void sendMulticast(char *vectorMsg, int s)
 			puts("couldnt create socket");
 				
 		GADGET *gadget = gadget_list[x];
-		server.sin_addr.s_addr = inet_addr(gadget->ip);
+		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gadget->port);
 				
@@ -82,7 +83,7 @@ void saveDevices(char string[], char *ip, int port)
 	{
 		GADGET *gadget = malloc(sizeof(GADGET));
 		
-		if(NULL != t) 
+		if(NULL != t)
 			gadget->ip = strtok(NULL, ",");
 		
 		if(NULL != t)
@@ -284,7 +285,7 @@ int main(int argc , char *argv[])
         // Send Message to Gateway
         if( send(sock , msg , strlen(msg) , 0) < 0)
         {
-	    puts("Inside first send if...");
+        	puts("Inside first send if...");
             puts("Send failed");
             break;
         }
