@@ -1,0 +1,210 @@
+7,Keychain,True,1448056590,127.0.0.1,5997
+7,Keychain,True,1448056595,127.0.0.1,5997
+7,Keychain,False,1448056600,127.0.0.1,5997
+7,Keychain,False,1448056605,127.0.0.1,5997
+7,Keychain,True,1448056610,127.0.0.1,5997
+7,Keychain,True,1448056615,127.0.0.1,5997
+7,Keychain,True,1448056620,127.0.0.1,5997
+7,Keychain,False,1448056625,127.0.0.1,5997
+7,Keychain,False,1448056630,127.0.0.1,5997
+7,Keychain,False,1448056635,127.0.0.1,5997
+7,Keychain,True,1448056640,127.0.0.1,5997
+7,Keychain,True,1448056645,127.0.0.1,5997
+7,Keychain,False,1448056650,127.0.0.1,5997
+7,Keychain,False,1448056655,127.0.0.1,5997
+8,Door,Open,1448056656,127.0.0.1,5996
+7,Keychain,True,1448056660,127.0.0.1,5997
+7,Keychain,True,1448056665,127.0.0.1,5997
+8,Door,Close,1448056666,127.0.0.1,5996
+7,Keychain,True,1448056670,127.0.0.1,5997
+8,Door,Open,1448056671,127.0.0.1,5996
+User Came Home!7,Keychain,False,1448056675,127.0.0.1,5997
+7,Keychain,False,1448056680,127.0.0.1,5997
+8,Door,Close,1448056683,127.0.0.1,5996
+7,Keychain,False,1448056685,127.0.0.1,5997
+7,Keychain,True,1448056690,127.0.0.1,5997
+6,SecurityDevice,offType,1448056692,127.0.0.1,5999
+8,Door,Open,1448056693,127.0.0.1,5996
+Type7,Keychain,True,1448056695,127.0.0.1,5997
+9,Motion,True,1448056697,127.0.0.1,5998
+Type7,Keychain,False,1448056700,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448056702,127.0.0.1,5998
+Type8,Door,Close,1448056703,127.0.0.1,5996
+Gateway VectorClock7,Keychain,False,1448056705,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448056707,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448056708,127.0.0.1,5996
+Type6,SecurityDevice,on,1448056708,127.0.0.1,5999
+6,SecurityDevice,onType,1448056709,127.0.0.1,5999
+7,Keychain,True,1448056710,127.0.0.1,5997
+Gateway VectorClockUser Left Home!9,Motion,False,1448056712,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448056715,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448056717,127.0.0.1,5998
+Type6,SecurityDevice,off,1448056717,127.0.0.1,5999
+6,SecurityDevice,offType,1448056717,127.0.0.1,5999
+7,Keychain,True,1448056720,127.0.0.1,5997
+8,Door,Close,1448056720,127.0.0.1,5996
+Gateway VectorClock9,Motion,True,1448056722,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448056725,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448056727,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448056730,127.0.0.1,5997
+Gateway VectorClock8,Door,Open,1448056730,127.0.0.1,5996
+Type6,SecurityDevice,on,1448056730,127.0.0.1,5999
+6,SecurityDevice,onType,1448056731,127.0.0.1,5999
+9,Motion,False,1448056732,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448056735,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448056737,127.0.0.1,5998
+7,Keychain,True,1448056740,127.0.0.1,5997
+Gateway VectorClock8,Door,Close,1448056740,127.0.0.1,5996
+Gateway VectorClock9,Motion,False,1448056742,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448056745,127.0.0.1,5997
+Gateway VectorClock8,Door,Open,1448056745,127.0.0.1,5996
+Type9,Motion,True,1448056747,127.0.0.1,5998
+Type6,SecurityDevice,off,1448056747,127.0.0.1,5999
+Gateway VectorClock7,Motion,True,1448059182,127.0.0.1,5998
+þ7,Motion,True,1448059187,127.0.0.1,5998
+7,Door,Open,1448059441,127.0.0.1,5996
+C§ÿ6,SecurityDevice,offType,1448059450,127.0.0.1,5999
+8,Keychain,True,1448059451,127.0.0.1,5997
+7,Door,Close,1448059451,127.0.0.1,5996
+9,Motion,True,1448059455,127.0.0.1,5998
+8,Keychain,True,1448059456,127.0.0.1,5997
+Gateway VectorClock7,Door,Open,1448059456,127.0.0.1,5996
+Type6,SecurityDevice,on,1448059456,127.0.0.1,5999
+Gateway VectorClock6,SecurityDevice,onType,1448059456,127.0.0.1,5999
+9,Motion,True,1448059460,127.0.0.1,5998
+Type6,SecurityDevice,off,1448059460,127.0.0.1,5999
+Gateway VectorClock8,Keychain,False,1448059461,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448059465,127.0.0.1,5998
+8,Keychain,False,1448059466,127.0.0.1,5997
+Gateway VectorClock7,Door,Close,1448059468,127.0.0.1,5996
+Gateway VectorClock9,Motion,False,1448059470,127.0.0.1,5998
+8,Keychain,True,1448059471,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448059475,127.0.0.1,5998
+8,Keychain,True,1448059476,127.0.0.1,5997
+Gateway VectorClock7,Door,Open,1448059478,127.0.0.1,5996
+Type6,SecurityDevice,on,1448059478,127.0.0.1,5999
+Gateway VectorClock6,SecurityDevice,onType,1448059478,127.0.0.1,5999
+9,Motion,True,1448059480,127.0.0.1,5998
+User Came Home!Gateway VectorClock7,Keychain,True,1448059988,127.0.0.1,5997
+6,SecurityDevice,offType,1448059989,127.0.0.1,5999
+7,Keychain,True,1448059993,127.0.0.1,5997
+9,Motion,True,1448059994,127.0.0.1,5998
+7,Keychain,False,1448059998,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448059999,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448060003,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060004,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060006,127.0.0.1,5996
+Type6,SecurityDevice,on,1448060006,127.0.0.1,5999
+Gateway VectorClock6,SecurityDevice,onType,1448060006,127.0.0.1,5999
+7,Keychain,True,1448060008,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060009,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060013,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060014,127.0.0.1,5998
+Type6,SecurityDevice,off,1448060014,127.0.0.1,5999
+6,SecurityDevice,offType,1448060014,127.0.0.1,5999
+8,Door,Close,1448060016,127.0.0.1,5996
+Gateway VectorClock7,Keychain,True,1448060018,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060019,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060021,127.0.0.1,5996
+Type6,SecurityDevice,on,1448060021,127.0.0.1,5999
+Gateway VectorClock6,SecurityDevice,onType,1448060021,127.0.0.1,5999
+7,Keychain,False,1448060023,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060024,127.0.0.1,5998
+Type7,Keychain,False,1448060028,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060029,127.0.0.1,5998
+Gateway VectorClock8,Door,Close,1448060033,127.0.0.1,5996
+Gateway VectorClock7,Keychain,False,1448060033,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060034,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060038,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060039,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060043,127.0.0.1,5996
+Type7,Keychain,True,1448060043,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060044,127.0.0.1,5998
+Type6,SecurityDevice,off,1448060044,127.0.0.1,5999
+6,SecurityDevice,offType,1448060044,127.0.0.1,5999
+7,Keychain,False,1448060048,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060049,127.0.0.1,5998
+Type8,Door,Close,1448060053,127.0.0.1,5996
+Gateway VectorClock7,Keychain,False,1448060053,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060054,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060058,127.0.0.1,5996
+Type6,SecurityDevice,on,1448060058,127.0.0.1,5999
+Gateway VectorClock6,SecurityDevice,onType,1448060058,127.0.0.1,5999
+7,Keychain,True,1448060058,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060059,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060063,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060064,127.0.0.1,5998
+Type6,SecurityDevice,off,1448060064,127.0.0.1,5999
+6,SecurityDevice,offType,1448060064,127.0.0.1,5999
+7,Keychain,True,1448060068,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060069,127.0.0.1,5998
+Type8,Door,Close,1448060070,127.0.0.1,5996
+Gateway VectorClock7,Keychain,False,1448060073,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060074,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448060078,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060079,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060080,127.0.0.1,5996
+Type6,SecurityDevice,on,1448060080,127.0.0.1,5999
+6,SecurityDevice,onType,1448060080,127.0.0.1,5999
+7,Keychain,False,1448060083,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060084,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060088,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060089,127.0.0.1,5998
+Gateway VectorClock8,Door,Close,1448060090,127.0.0.1,5996
+Gateway VectorClock7,Keychain,True,1448060093,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060094,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060095,127.0.0.1,5996
+Type7,Keychain,False,1448060098,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060099,127.0.0.1,5998
+Type7,Keychain,False,1448060103,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060104,127.0.0.1,5998
+Gateway VectorClock8,Door,Close,1448060107,127.0.0.1,5996
+Gateway VectorClock7,Keychain,True,1448060108,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060109,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060113,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060114,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060117,127.0.0.1,5996
+Type7,Keychain,True,1448060118,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060119,127.0.0.1,5998
+User Came Home!
+6,SecurityDevice,offType,1448060119,127.0.0.1,5999
+7,Keychain,False,1448060123,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060124,127.0.0.1,5998
+Type8,Door,Close,1448060127,127.0.0.1,5996
+Gateway VectorClock7,Keychain,False,1448060128,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060129,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060132,127.0.0.1,5996
+Type6,SecurityDevice,on,1448060132,127.0.0.1,5999
+6,SecurityDevice,onType,1448060132,127.0.0.1,5999
+7,Keychain,False,1448060133,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060134,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060138,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060139,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060143,127.0.0.1,5997
+Gateway VectorClock8,Door,Close,1448060144,127.0.0.1,5996
+Gateway VectorClock9,Motion,True,1448060144,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448060148,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060149,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448060153,127.0.0.1,5997
+Gateway VectorClock8,Door,Open,1448060154,127.0.0.1,5996
+Type9,Motion,False,1448060154,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060158,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060159,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060163,127.0.0.1,5997
+Gateway VectorClock8,Door,Close,1448060164,127.0.0.1,5996
+Gateway VectorClock9,Motion,True,1448060164,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060168,127.0.0.1,5997
+Gateway VectorClock8,Door,Open,1448060169,127.0.0.1,5996
+Type9,Motion,True,1448060169,127.0.0.1,5998
+Gateway VectorClock7,Keychain,False,1448060173,127.0.0.1,5997
+Gateway VectorClock9,Motion,True,1448060174,127.0.0.1,5998
+Type7,Keychain,False,1448060178,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060179,127.0.0.1,5998
+Gateway VectorClock8,Door,Close,1448060181,127.0.0.1,5996
+Gateway VectorClock7,Keychain,False,1448060183,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060184,127.0.0.1,5998
+Gateway VectorClock7,Keychain,True,1448060188,127.0.0.1,5997
+Gateway VectorClock9,Motion,False,1448060189,127.0.0.1,5998
+Gateway VectorClock8,Door,Open,1448060191,127.0.0.1,5996
+Type7,Keychain,True,1448060193,127.0.0.1,5997
+Gateway VectorClock
