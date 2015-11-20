@@ -16,6 +16,7 @@ int *inter;
 int inter_size;
 int interIndex = 0;
 int array_size; 
+FILE *log;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -44,6 +45,8 @@ void updateVectorClock(char* msg) {
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
+    fprintf(log, "%s", vc);
+    fflush(log);
     printf("Updated vector in Gateway is: %s\n", vc);
 }
 
@@ -296,7 +299,7 @@ int main(int argc , char *argv[])
         return 1;
     }
 
-    FILE *log = fopen(argv[3],"a");
+    log = fopen(argv[3],"a");
 
     if ( NULL == fp )
     {

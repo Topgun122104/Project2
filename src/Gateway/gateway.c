@@ -52,6 +52,8 @@ void updateVectorClock(char* msg) {
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
+    fprintf(logFile, "%s", vc);
+    fflush(logFile);
     printf("Updated vector in Gateway is: %s\n", vc);
 }
 
