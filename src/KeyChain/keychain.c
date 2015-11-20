@@ -13,7 +13,7 @@ GADGET *gadget_list[MAX_CONNECTIONS];
 int gadget_index = 0;
 int *input;
 int array_size; 
-FILE *log;
+FILE *logFile;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -42,8 +42,8 @@ void updateVectorClock(char* msg) {
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
-    fprintf(log, "%s", vc);
-    fflush(log);
+    fprintf(logFile, "%s", vc);
+    fflush(logFile);
     printf("Updated vector in Gateway is: %s\n", vc);
 }
 
@@ -259,9 +259,9 @@ int main(int argc , char *argv[])
         return 1;
     }
 
-    log = fopen(argv[3],"a");
+    logFile = fopen(argv[3],"a");
 
-    if ( NULL == fp )
+    if ( NULL == logFile )
     {
         perror("Keychain Sensor Log File Read Failure");
         return 1;
@@ -475,11 +475,11 @@ int main(int argc , char *argv[])
 		char* v = toString(currValue);
 		sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
 						sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
-		fprintf(log, "%s", log_msg);
-		fflush(log);
+		fprintf(logFile, "%s", log_msg);
+		fflush(logFile);
     }
      
-    fclose(log);
+    fclose(logFile);
     close(sock);
     return 0;
 }

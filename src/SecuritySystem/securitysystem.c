@@ -10,7 +10,7 @@
 struct VECTORCLOCK vectorclock;
 GADGET *gadget_list[MAX_CONNECTIONS];
 int gadget_index = 0;
-FILE *log;
+FILE *logFile;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char msg[]) {
@@ -39,8 +39,8 @@ void updateVectorClock(char msg[]) {
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
-    fprintf(log, "%s", vc);
-    fflush(log);
+    fprintf(logFile, "%s", vc);
+    fflush(logFile);
     printf("Updated vector in Gateway is: %s\n", vc);
 }
 
@@ -159,9 +159,9 @@ void deviceListener(void *ptr)
 int main(int argc , char *argv[])
 {
     FILE *fp = fopen(argv[1],"r");
-    log = fopen(argv[2],"a");
+    logFile = fopen(argv[2],"a");
 
-    if ( NULL == log )
+    if ( NULL == logFile )
     {
         perror("Security System Log File Read Failure");
         return 1;
@@ -354,8 +354,8 @@ int main(int argc , char *argv[])
 	
         			sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
 						sock, d_type, state, (unsigned)time(NULL), d_ip, d_port);
-        			fprintf(log, "%s", log_msg);
-        			fflush(log);
+        			fprintf(logFile, "%s", log_msg);
+        			fflush(logFile);
         		}
 			}	
 	
@@ -380,7 +380,7 @@ int main(int argc , char *argv[])
         }
     }
     
-    fclose(log); 
+    fclose(logFile); 
     close(sock);
     return 0;
 }
