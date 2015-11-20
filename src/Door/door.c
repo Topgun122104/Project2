@@ -523,18 +523,18 @@ int main(int argc , char *argv[])
 		//Only send door state when state changes
 			if(currValue != oldValue)
 			{            
-			sprintf(msg,
+				sprintf(msg,
 						"Type:currValue;Action:%d",
 						currValue);
+			
+			char* v = toString(currValue);
+			sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
+							sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
+			fprintf(logFile, "%s", log_msg);
+			fflush(logFile);
+			//Update the values
+			oldValue = currValue;
 			}
-	
-		char* v = toString(currValue);
-		sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
-						sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
-		fprintf(logFile, "%s", log_msg);
-		fflush(logFile);
-		//Update the values
-		oldValue = currValue;
     }
      
     fclose(logFile);
