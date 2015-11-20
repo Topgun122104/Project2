@@ -245,27 +245,25 @@ void printGadgets()
     for(x=0; x<gadget_index; x++)
     {
         GADGET *gadget = gadget_list[x];
+	char msg[MSG_SIZE];
 
-        char msg[MSG_SIZE];
-        char* currStr = toString(gadget->currValue, gadget->gadgetType);
-
-        if(isOn(gadget->state))
+	if(!strstr(gadget->gadgetType, DATABASE))
 	{
+        	char* currStr = toString(gadget->currValue, gadget->gadgetType);
 		//If Security Device, we want to display current state instead of current value
-		if(strstr(gadget->gadgetType, SECURITYDEVICE) || strstr(gadget->gadgetType, DATABASE))
+		if(strstr(gadget->gadgetType, SECURITYDEVICE))
 		{
-			puts("Inside secDev state");
-            		sprintf(msg, "%d----%s----%s----%u----%s----%d",
-                  		  gadget->id, gadget->gadgetType, gadget->state, (unsigned)time(NULL), gadget->ip, gadget->port);
+        		sprintf(msg, "%d----%s----%s----%u----%s----%d",
+                	  gadget->id, gadget->gadgetType, gadget->state, (unsigned)time(NULL), gadget->ip, gadget->port);
 		}
 		else
 		{
 			sprintf(msg, "%d----%s----%s----%u----%s----%d",
-                  		  gadget->id, gadget->gadgetType, currStr, (unsigned)time(NULL), gadget->ip, gadget->port);
+                 		  gadget->id, gadget->gadgetType, currStr, (unsigned)time(NULL), gadget->ip, gadget->port);
 		}
 
 	}
-        puts(msg);        
+	puts(msg);      
     }
     puts("------------------------------------------------");
 }
@@ -383,8 +381,6 @@ void *connection(void *skt_desc)
 		gadget->state = (char *)malloc(sizeof(char) * 3);            
                 strcpy(gadget->state, ON);
 	    }
-            gadget->state = (char *)malloc(sizeof(char) * 3);            
-            strcpy(gadget->state, ON);
 
             gadget_list[gadget_index++] = gadget;
 
@@ -397,9 +393,7 @@ void *connection(void *skt_desc)
             
 			if(strstr(gadget->gadgetType, DATABASE))
 			{
-				puts("Inside if...");
 				db_sock = client_skt_desc;
-				printf("db_sock: %d\n", db_sock);
 			}
         }
 
@@ -455,6 +449,7 @@ void *connection(void *skt_desc)
         	//First check for intruder
 		if(ifIntruder())
 		{
+			puts("Intruder Alert!!");
 			char* gw_log_msg = "ALARM SOUNDED!!";
 			char* db_log_msg = "Type:insert;Action:ALARM SOUNDED!";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
@@ -463,6 +458,7 @@ void *connection(void *skt_desc)
 		}
         	else if(userHome()) 
         	{
+			puts("User Home!");
         		sprintf(sec_msg, "Type:switch;Action:off");
         		// Send turn on message to security system
         		int x;
@@ -502,6 +498,7 @@ void *connection(void *skt_desc)
         	printf("DOOR IS TYPE AND OPEN");
         	if(userHome()) 
         	{
+			puts("User Home!");
           		sprintf(sec_msg, "Type:switch;Action:off");
         	    // Send turn on message to security system
            		int x;
@@ -530,17 +527,48 @@ void *connection(void *skt_desc)
 		      fflush(logFile);
 		      write(db_sock, db_log_msg, strlen(db_log_msg));
         	}
+		else if(homeEmpty())
+		{
+			puts("User Gone!");
+          		sprintf(sec_msg, "Type:switch;Action:on");
+        	    // Send turn on message to security system
+           		int x;
+          		for(x=0; x<gadget_index; x++)
+       		    {
+     		        GADGET *gadget = gadget_list[x];
+        	   		        
+      		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+    		        {
+      		        	struct sockaddr_in addrDest;        	  		
+      					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        	        	addrDest.sin_family = AF_INET;
+        	        	addrDest.sin_port = htons(gadget->port);
+        	        					
+        	        	if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        	        			(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        	       		{
+        	     			puts("Send failed");
+        	        		break;
+        	       		} 
+    		        }
+        	      }	    
+        	      char* gw_log_msg = "User Left Home";
+		      char* db_log_msg = "Type:insert;Action:User Left Home!";
+		      fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
+		      fflush(logFile);
+		      write(db_sock, db_log_msg, strlen(db_log_msg));
+		}
         }
         
         memset(out_msg, 0, sizeof(out_msg));
         
-        if( !isOn(gadget->state) )
-        {
-            sprintf(out_msg,
-               "Type:%s;Action:%s",
-                CMD_SWITCH, ON);
-            gadget->state = "on";
-        }
+       // if( !isOn(gadget->state) )
+       // {
+       //     sprintf(out_msg,
+       //        "Type:%s;Action:%s",
+       //         CMD_SWITCH, ON);
+       //     gadget->state = "on";
+       // }
         
         write(client_skt_desc, out_msg, strlen(out_msg));
 
