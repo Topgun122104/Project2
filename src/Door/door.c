@@ -393,7 +393,7 @@ int main(int argc , char *argv[])
     timer();
 
     // Sensor State (On by default)
-    char *state = ON;
+    char *state = OFF;
 
     char *type, *action;
 

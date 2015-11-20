@@ -65,10 +65,9 @@ int max(int x, int y) {
 // Intruder entered if 1st: Door is open, then motion sensed with no keychain present
 // Called when motion sensed
 int ifIntruder() {
-	return 0;
 	int result = 0;
 	//Someone entered without the keychain #AboutToHaveABadDay
-	if((doorTime < motionTime) && !currKeychain)
+	if(currDoor && (doorTime < motionTime) && !currKeychain)
 	{
 		result = 1;
 	}
@@ -77,9 +76,19 @@ int ifIntruder() {
 
 int userHome()
 {
-	return 0;
 	int result = 0; 
-	if((doorTime < motionTime) && currKeychain)
+	if(currDoor && (doorTime < motionTime) && currKeychain)
+	{
+		result = 1;
+	}
+
+	return result;
+}
+
+int homeEmpty()
+{
+	int result = 0; 
+	if(currDoor && (motionTime < doorTime))
 	{
 		result = 1;
 	}
@@ -126,10 +135,12 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 		{
 			strcpy(tempVal, "True");
 			motionTime = stamp;
+			currMotion = 1;
 		}
 		else
 		{
 			strcpy(tempVal, "False");
+			currMotion = 1;
 		}
 	}
 	else if(strstr(type, KEYCHAIN))
@@ -138,10 +149,12 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 		{
 			strcpy(tempVal, "True");
 			keychainTime = stamp;
+			currKeychain = 1;
 		}
 		else
 		{
 			strcpy(tempVal, "False");
+			currKeychain = 0;
 		}
 	}
 	else if(strstr(type, DOOR))
@@ -150,10 +163,12 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 		{
 			strcpy(tempVal, "Open");
 			doorTime = stamp;
+			currDoor = 1;
 		}
 		else
 		{
 			strcpy(tempVal, "Close");
+			currDoor = 0;
 		}
 	}
 
@@ -485,7 +500,7 @@ void *connection(void *skt_desc)
             strncmp( toString(gadget->currValue, gadget->gadgetType), OPEN, strlen(OPEN) ) == 0) 
         {
         	printf("DOOR IS TYPE AND OPEN");
-        	if(!userHome()) 
+        	if(userHome()) 
         	{
           		sprintf(sec_msg, "Type:switch;Action:off");
         	    // Send turn on message to security system
