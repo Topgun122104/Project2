@@ -239,7 +239,7 @@ void sendDeviceListMulticast()
 void printGadgets()
 {
 	
-    puts("------------------------------------------------");
+    printf("------------------------------------------------\n");
 
     int x;
     for(x=0; x<gadget_index; x++)
@@ -444,7 +444,7 @@ void *connection(void *skt_desc)
         if(strncmp( gadget->gadgetType, MOTION, strlen(MOTION) ) == 0 && 
            strncmp( toString(gadget->currValue, gadget->gadgetType), TRU, strlen(TRU) ) == 0) 
         {
-        	printf("MOTION IS TYPE AND TRUE");
+        	printf("MOTION IS TYPE AND TRUE\n");
         	
         	//First check for intruder
 		if(ifIntruder())
