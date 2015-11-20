@@ -458,6 +458,8 @@ int main(int argc , char *argv[])
            }
         }
         
+	fcntl(sock, F_SETFL, O_NONBLOCK);
+
         // Receive server (gateway) response
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
         {
