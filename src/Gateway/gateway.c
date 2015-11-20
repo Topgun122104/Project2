@@ -48,7 +48,7 @@ void updateVectorClock(char* msg) {
 	vectorclock.securitySystem = max(vectorclock.securitySystem, s);
 	
     char vc[MSG_SIZE];
-    sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
+    sprintf(vc, "VectorClock:%d-%d-%d-%d-%d,\n",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
@@ -420,7 +420,18 @@ void *connection(void *skt_desc)
                  strncmp( gadget->state, action, strlen(action) ) != 0 )
         {	
             memset(gadget->state, 0, 3);
-            strcpy(gadget->state, action);
+            if( strncmp (action, "offType", strlen("offType")) == 0)
+            {
+            	strcpy(gadget->state, "off");
+            }
+            else if( strncmp (action, "onType", strlen("onType")) == 0)
+            {
+            	strcpy(gadget->state, "on");
+            }
+            else 
+            {
+            	strcpy(gadget->state, action);
+            }
             printGadgets();
 			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 							gadget->port);
 			fprintf(logFile, "%s", log_msg);

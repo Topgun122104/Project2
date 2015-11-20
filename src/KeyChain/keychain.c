@@ -38,7 +38,7 @@ void updateVectorClock(char* msg) {
 	vectorclock.securitySystem = max(vectorclock.securitySystem, s);
 	
     char vc[MSG_SIZE];
-    sprintf(vc, "Gateway VectorClock:%d-%d-%d-%d-%d,\n",
+    sprintf(vc, "VectorClock:%d-%d-%d-%d-%d,\n",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
 			vectorclock.securitySystem);
