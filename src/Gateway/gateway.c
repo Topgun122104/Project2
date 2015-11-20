@@ -65,6 +65,7 @@ int max(int x, int y) {
 // Intruder entered if 1st: Door is open, then motion sensed with no keychain present
 // Called when motion sensed
 int ifIntruder() {
+	return 0;
 	int result = 0;
 	//Someone entered without the keychain #AboutToHaveABadDay
 	if((doorTime < motionTime) && !currKeychain)
@@ -76,6 +77,7 @@ int ifIntruder() {
 
 int userHome()
 {
+	return 0;
 	int result = 0; 
 	if((doorTime < motionTime) && currKeychain)
 	{
@@ -354,7 +356,18 @@ void *connection(void *skt_desc)
 
             gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
             memcpy(gadget->ip, t_ip, strlen(t_ip));
-        
+
+	    //Security System is off by default
+            if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    {
+		gadget->state = (char *)malloc(sizeof(char) * 4);            
+                strcpy(gadget->state, OFF);
+	    }
+	    else
+	    {
+		gadget->state = (char *)malloc(sizeof(char) * 3);            
+                strcpy(gadget->state, ON);
+	    }
             gadget->state = (char *)malloc(sizeof(char) * 3);            
             strcpy(gadget->state, ON);
 
