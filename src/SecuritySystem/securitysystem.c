@@ -50,7 +50,8 @@ int max(int x, int y) {
 // Sends the series of unicast messages
 void sendMulticast(char *vectorMsg, int s)
 {	
-	printf("SOCKET IS: %i\n\n", s);
+	printf("connecting multicast\n");
+
 	int x;
 	for(x=0;x<gadget_index;x++)
 	{
@@ -67,7 +68,7 @@ void sendMulticast(char *vectorMsg, int s)
 		server.sin_port = htons(gadget->port);
 				
 		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
-			puts("\n send failed");
+			puts("\n send failed!");
 	}
 }
 
@@ -229,8 +230,8 @@ int main(int argc , char *argv[])
         d_area = atoi(strtok(NULL, ":"));
     }
 
-    int sock;
-    struct sockaddr_in server;
+    int sock, sock2;
+    struct sockaddr_in server, server2;
     char server_reply[MSG_SIZE];
      
     //Create socket
@@ -244,6 +245,18 @@ int main(int argc , char *argv[])
     server.sin_addr.s_addr = inet_addr( ip );
     server.sin_family = AF_INET;
     server.sin_port = htons( port );
+    
+    //Create socket
+    sock2 = socket(AF_INET , SOCK_STREAM , 0);
+    if (sock2 == -1)
+    {
+        printf("Could not create socket");
+    }
+    puts("Socket created");
+    
+    server2.sin_addr.s_addr = inet_addr( ip );
+    server2.sin_family = AF_INET;
+    server2.sin_port = htons( 6000 );
  
     //Connect to remote server
     if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
@@ -295,6 +308,7 @@ int main(int argc , char *argv[])
         // Send multicast 
         if(gadget_index == 3)
         {
+        	printf("Trying to send 3\n");
             vectorclock.securitySystem++;
 
             sprintf(vc,
@@ -302,9 +316,9 @@ int main(int argc , char *argv[])
         				vectorclock.door, vectorclock.motion,
         				vectorclock.keyChain, vectorclock.gateway,
         				vectorclock.securitySystem);
-    	
+            printf("Trying to send multicast\n");
             // Send multicast with msg to all devices
-           sendMulticast(vc, sock);
+           sendMulticast(vc, sock2);
            
          	if(send(sock , vc , strlen(vc) , 0) < 0)
          	{
@@ -327,7 +341,6 @@ int main(int argc , char *argv[])
         
         	else 
         	{
-        		printf("\nmade it to else\n");
         		getCommands(server_reply,&type,&action);
         		
         		if ( strncmp( type, CMD_SWITCH, strlen(CMD_SWITCH) ) == 0 )
@@ -353,6 +366,7 @@ int main(int argc , char *argv[])
         
         if(gadget_index == 3)
         {
+        	printf("Creating new thread\n");
             pthread_t dev1_thread;
             
             if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &d_port) < 0 )
