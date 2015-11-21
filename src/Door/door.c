@@ -20,7 +20,6 @@ FILE *logFile;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
-	printf("msg is : %s\n", msg);
 	int d, m, k, g, s;
 
     	d = atoi(strtok(msg, "-"));
@@ -47,7 +46,6 @@ void updateVectorClock(char* msg) {
 			vectorclock.securitySystem);
     fprintf(logFile, "%s", vc);
     fflush(logFile);
-    printf("Updated vector in Gateway is: %s\n", vc);
 }
 
 int max(int x, int y) {
@@ -81,7 +79,6 @@ void sendMulticast(char *vectorMsg, int s)
 
 void saveDevices(char string[], char *ip, int port) 
 {
-	printf("Saving devices\n");
 	char *token, *t, *p;
 	int x;
 	
@@ -150,8 +147,6 @@ void *timer()
     inter_size--;
     //////////////////////////////////////////
 
-    printf("Inter_size: %d\n", inter_size);
-
     fseek(fp, 0, SEEK_SET);
 
     char *last_tok;
@@ -183,8 +178,6 @@ void *timer()
         	if( NULL != token )
             		strcpy(temper, strtok(NULL, ""));
 
-		printf("Start: %d  Temper: %s\n", startTime, temper);
-
 		flag = 0;
 	}
 	else
@@ -194,8 +187,6 @@ void *timer()
         token = strtok(temp, ",");
         
         endTime = atoi(token);
-
-		printf("Start: %d End: %d   ", startTime, endTime);
 
 		//Convert Open or Close to 1 or 0 respectively
         if(strstr(temper, OPEN))
@@ -220,19 +211,6 @@ void *timer()
     }
     
     fclose(fp);
-
-    int x;
-    for(x=0;x<array_size;x++)
-    {
-        printf("%d",input[x]);
-    }
-	puts("\n");
-
-    int y;
-    for(y=0;y<inter_size;y++)
-    {
-        printf("%d ",inter[y]);
-    }
 }
 
 void getCommands(char string[], char **type, char **action)
@@ -282,9 +260,8 @@ void deviceListener(void *ptr)
 	{
 		char *command, *action;
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("\nReceived multicast msg: %s\n\n", server_reply);
+		printf("Received: From:127.0.0.1:%i Msg:%s Time:%u\n\n", port, server_reply, (unsigned)time(NULL));
 		getCommands(server_reply, &command, &action);
-		printf("Action: %s\n", action);
 		updateVectorClock(action);
 	}
 }
@@ -429,7 +406,7 @@ int main(int argc , char *argv[])
     
     while(1)
     {
-        printf("\nSend to Gateway: %s\n",msg);
+        printf("Send: To:Gateway Msg:%s Time:%u\n\n",msg, (unsigned)time(NULL));
         
         // Send Gateway Current Monitored Value
         if( send(sock , msg , strlen(msg) , 0) < 0)
@@ -449,7 +426,7 @@ int main(int argc , char *argv[])
         				vectorclock.keyChain, vectorclock.gateway,
         				vectorclock.securitySystem);
                 	
-             printf("Vector clock message sending is: %s\n", vc);
+            printf("Send: To:multicast Msg:%s Time:%u\n\n", vc, (unsigned)time(NULL));
                 	
             // Send multicast with msg to all devices
            sendMulticast(vc, sock);
@@ -466,8 +443,7 @@ int main(int argc , char *argv[])
         // Receive server (gateway) response
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
         {
-            puts("Gateway reply:");
-            puts(server_reply);
+            printf("Received From:gateway Msg:%s Time:%u\n\n", server_reply, (unsigned)time(NULL));
             
         	// The device list multicast message
         	if( strncmp( server_reply, "DeviceList", 10) == 0) 
@@ -481,7 +457,6 @@ int main(int argc , char *argv[])
         // Receive multicast messages from other devices ?
         if( recv(sock, server_reply, MSG_SIZE, 0) > 0)
         {
-        		printf("Updating clock... \n");
         		updateVectorClock(server_reply);
         }
         
@@ -517,8 +492,6 @@ int main(int argc , char *argv[])
 			currValue = input[actualTime];
 	
 			memset(msg, 0, sizeof(msg));
-
-		printf("Current Value: %d\nOld Value: %d\n", currValue, oldValue);
 	
 		//Only send door state when state changes
 			if(currValue != oldValue)

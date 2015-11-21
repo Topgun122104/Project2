@@ -27,7 +27,6 @@ int currSystem = 0;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
-	printf("msg is : %s\n", msg);
 	int d, m, k, g, s;
 
     	d = atoi(strtok(msg, "-"));
@@ -54,7 +53,6 @@ void updateVectorClock(char* msg) {
 			vectorclock.securitySystem);
     fprintf(logFile, "%s", vc);
     fflush(logFile);
-    printf("Updated vector in Gateway is: %s\n", vc);
 }
 
 int max(int x, int y) {
@@ -234,7 +232,8 @@ void sendDeviceListMulticast()
 				break;
 			} 
         }
-    }	    
+    }
+    printf("Send: To:multicast Msg:%s Time:%u\n\n", deviceList, (unsigned)time(NULL));
 }
 
 // Print the latest information about Devices and Sensors
@@ -351,7 +350,7 @@ void *connection(void *skt_desc)
     // Receive Data from Client
     while( (read_size = recv(client_skt_desc, client_msg, sizeof(client_msg), 0)) > 0 )
     {
-        printf("\nFROM CLIENT: %s\n\n",client_msg);
+        printf("Received: Msg:%s Time:%u\n\n",client_msg, (unsigned)time(NULL));
         memset(msg, 0, sizeof(msg));
         memset(cpy_msg, 0, sizeof(cpy_msg));
         memset(sec_msg, 0, sizeof(sec_msg));
@@ -404,7 +403,6 @@ void *connection(void *skt_desc)
         {
             if( atoi(action) != gadget->currValue )
             {
-                puts("CHANGING"); 
                 gadget->currValue = atoi(action);
                 printGadgets();
             }
@@ -456,13 +454,11 @@ void *connection(void *skt_desc)
         // Check if user entered
         if(strncmp( gadget->gadgetType, MOTION, strlen(MOTION) ) == 0 && 
            strncmp( toString(gadget->currValue, gadget->gadgetType), TRU, strlen(TRU) ) == 0) 
-        {
-        	printf("MOTION IS TYPE AND TRUE\n");
-        	
+        {        	
         	//First check for intruder
 		if(ifIntruder())
 		{
-			puts("Intruder Alert!!");
+			printf("Intruder Alert! Time: %u\n\n", (unsigned)time(NULL));
 			char* gw_log_msg = "ALARM SOUNDED!!\n";
 			char* db_log_msg = "Type:insert;Action:ALARM SOUNDED!\n";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
@@ -471,7 +467,7 @@ void *connection(void *skt_desc)
 		}
         	else if(userHome()) 
         	{
-			puts("User Home!");
+			printf("User Home! Time: %u\n\n", (unsigned)time(NULL));
         		sprintf(sec_msg, "Type:switch;Action:off");
         		// Send turn on message to security system
         		int x;
@@ -493,6 +489,8 @@ void *connection(void *skt_desc)
         						puts("Send failed");
         						break;
         					} 
+        		            printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+
         		        }
         		}
 	    
@@ -508,10 +506,9 @@ void *connection(void *skt_desc)
         if( strncmp( gadget->gadgetType, DOOR, strlen(DOOR) ) == 0 &&
             strncmp( toString(gadget->currValue, gadget->gadgetType), OPEN, strlen(OPEN) ) == 0) 
         {
-        	printf("DOOR IS TYPE AND OPEN\n");
         	if(userHome()) 
         	{
-			puts("User Home!");
+			printf("Notice: User Home Time: %u\n\n",(unsigned)time(NULL));
           		sprintf(sec_msg, "Type:switch;Action:off");
         	    // Send turn on message to security system
            		int x;
@@ -532,6 +529,7 @@ void *connection(void *skt_desc)
         	     			puts("Send failed");
         	        		break;
         	       		} 
+    		            printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
     		        }
         	      }	    
         	      char* gw_log_msg = "User Came Home\n";
@@ -542,7 +540,7 @@ void *connection(void *skt_desc)
         	}
 		else if(homeEmpty())
 		{
-			puts("User Gone!");
+			printf("Notice: User Gone Time:%u\n\n", (unsigned)time(NULL));
           		sprintf(sec_msg, "Type:switch;Action:on");
         	    // Send turn on message to security system
            		int x;
@@ -563,6 +561,7 @@ void *connection(void *skt_desc)
         	     			puts("Send failed");
         	        		break;
         	       		} 
+    		            printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
     		        }
         	      }	    
         	      char* gw_log_msg = "User Left Home\n";
@@ -594,7 +593,7 @@ void *connection(void *skt_desc)
         sprintf(msg, 
                 "Client %d Unregistered...", 
                 client_skt_desc);
-        puts(msg);
+        //puts(msg);
         fflush(stdout);
     } 
     
