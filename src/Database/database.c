@@ -158,16 +158,14 @@ int main(int argc , char *argv[])
             puts("Gateway reply failed");
             break;
         }
-         
-        puts("Gateway reply:");
-        puts(server_reply);
+        printf("Received: From: gateway Msg:%s Time:%u\n\n",server_reply, (unsigned)time(NULL));
 
         getCommands(server_reply,&type,&action);
 
         if ( strncmp( type, CMD_INSERT, strlen(CMD_INSERT) ) == 0 )
         {
 		strcpy(log_msg, action);
-		printf("Value: %s\n", log_msg);
+		printf("Inserting to log: %s\n\n", log_msg);
  
 		fprintf(db, "%s", log_msg);
 		fflush(db);

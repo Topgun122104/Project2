@@ -420,7 +420,7 @@ int main(int argc , char *argv[])
         // Receive server (gateway) response
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
         {
-            printf("Received From:gateway Msg:%s Time:%u\n\n", server_reply, (unsigned)time(NULL));
+            printf("Received:From:gateway Msg:%s Time:%u\n\n", server_reply, (unsigned)time(NULL));
             
         	// The device list multicast message
         	if( strncmp( server_reply, "DeviceList", 10) == 0) 
