@@ -1,4 +1,0 @@
-all: databaseS
-
-database: databaseS.c
-	gcc databaseS.c -pthread -o databaseS
