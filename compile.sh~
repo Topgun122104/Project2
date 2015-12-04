@@ -10,7 +10,7 @@ cd src/DatabaseP
 make
 mv databaseP ../../output
 
-cd ../DatabaseS
+cd src/DatabaseS
 make
 mv databaseS ../../output
 

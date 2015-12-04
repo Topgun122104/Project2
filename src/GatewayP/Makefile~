@@ -1,0 +1,5 @@
+all: gatewayP
+
+gateway: gatewayP.c
+	gcc gatewayP.c -pthread -o gatewayP
+

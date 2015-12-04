@@ -1,8 +1,8 @@
 #!/bin/bash
 
-x-terminal-emulator -e "./gatewayP ../SampleConfigurationFiles/SampleGatewayPriConfig.txt ../src/GatewayP/gwp.log"
+x-terminal-emulator -e "./gateway ../SampleConfigurationFiles/SampleGatewayConfig.txt ../src/Gateway/gw.log"
 
-x-terminal-emulator -e "./databaseP ../SampleConfigurationFiles/SampleBackendPriConfig.txt ../src/DatabaseP/dbp.log"
+x-terminal-emulator -e "./database ../SampleConfigurationFiles/SampleBackendConfig.txt ../src/Database/db.log"
 
 x-terminal-emulator -e "./securitysystem ../SampleConfigurationFiles/SampleSecurityDeviceConfig.txt ../src/SecuritySystem/system.log"
 
