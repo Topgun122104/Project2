@@ -702,7 +702,7 @@ int main( int argc, char *argv[] )
 	char sec_info[MSG_SIZE];
 	sprintf(sec_info, "%s,%u", gw_sec_ip, gw_sec_port);
 	write(sock_pri, sec_info, strlen(sec_info));
-	close(sock_pri);
+	close(sock_pri)
     }  //This GW is the primary (needs to open socket to listen for secondary IP/Port)
     else if(strstr(ip_cur, ip_pri) && port_cur == port_pri)
     {

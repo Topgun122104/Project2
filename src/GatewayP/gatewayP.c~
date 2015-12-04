@@ -667,8 +667,15 @@ int main( int argc, char *argv[] )
     printf("IP Primary: %s\n", ip_pri);
     printf("Port Primary: %d\n", port_pri);
 
-    //This GW is the Secondary meaning we have all the information
-    if(!strstr(ip_cur, ip_pri) || port_cur != port_pri)
+    //This GW is the primary (needs to open socket to listen for secondary IP/Port)
+    if(strstr(ip_cur, ip_pri) && port_cur == port_pri)
+    {
+	puts("I am Primary!");
+	gw_pri_ip = malloc(sizeof(char) * strlen(ip_pri));
+	strcpy(gw_pri_ip, ip_pri);
+	gw_pri_port = port_pri;
+    }  //This GW is the Secondary meaning we have all the information
+    else if(!strstr(ip_cur, ip_pri) || port_cur != port_pri)
     {
 	puts("I am Secondary!");
 	gw_sec_ip = malloc(sizeof(char) * strlen(ip_cur));
@@ -702,14 +709,6 @@ int main( int argc, char *argv[] )
 	char sec_info[MSG_SIZE];
 	sprintf(sec_info, "%s,%u", gw_sec_ip, gw_sec_port);
 	write(sock_pri, sec_info, strlen(sec_info));
-	close(sock_pri);
-    }  //This GW is the primary (needs to open socket to listen for secondary IP/Port)
-    else if(strstr(ip_cur, ip_pri) && port_cur == port_pri)
-    {
-	puts("I am Primary!");
-	gw_pri_ip = malloc(sizeof(char) * strlen(ip_pri));
-	strcpy(gw_pri_ip, ip_pri);
-	gw_pri_port = port_pri;
     }
 
     fclose(fp);

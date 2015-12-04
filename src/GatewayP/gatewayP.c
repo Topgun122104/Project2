@@ -24,6 +24,10 @@ int currKeychain = 0;
 //Last time keychain was detected
 unsigned int keychainTime = -1;
 int currSystem = 0;
+char* gw_sec_ip = NULL;
+unsigned short int gw_sec_port = 0;
+char* gw_pri_ip = NULL;
+unsigned short int gw_pri_port = 0;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -623,26 +627,90 @@ int main( int argc, char *argv[] )
         return 1;
     }
 
-    fseek(fp, 0, SEEK_END);
-    long pos = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    char* line1 = NULL;
+    ssize_t len1 = 0;
+    char* line2 = NULL;
+    ssize_t len2 = 0;
 
-    char *gateway = malloc(pos * sizeof(char));
-    fread(gateway, pos, 1, fp);
+    getline(&line1, &len1, fp);
+    getline(&line2, &len2, fp);
 
-    char *token, *ip;
-    unsigned short int port;
+    char *token, *ip_cur, *ip_pri;
+    unsigned short int port_cur, port_pri;
 
-    token = strtok(gateway, ",");
+    //Parse Current Gateway info
+    token = strtok(line1, ",");
 
-    ip = token;
+    ip_cur = token;
 
     if( NULL != token )
     {
         token = strtok(NULL, ",");
     }
 
-    port = (unsigned short int) atoi(token);
+    port_cur = (unsigned short int) atoi(token);
+
+    //Parse Primary Gateway info
+    token = strtok(line2, ",");
+
+    ip_pri = token;
+
+    if( NULL != token )
+    {
+        token = strtok(NULL, ",");
+    }
+
+    port_pri = (unsigned short int) atoi(token);
+    
+    printf("IP Current: %s\n", ip_cur);
+    printf("Port Current: %d\n", port_cur);
+    printf("IP Primary: %s\n", ip_pri);
+    printf("Port Primary: %d\n", port_pri);
+
+    //This GW is the primary (needs to open socket to listen for secondary IP/Port)
+    if(strstr(ip_cur, ip_pri) && port_cur == port_pri)
+    {
+	puts("I am Primary!");
+	gw_pri_ip = malloc(sizeof(char) * strlen(ip_pri));
+	strcpy(gw_pri_ip, ip_pri);
+	gw_pri_port = port_pri;
+    }  //This GW is the Secondary meaning we have all the information
+    else if(!strstr(ip_cur, ip_pri) || port_cur != port_pri)
+    {
+	puts("I am Secondary!");
+	gw_sec_ip = malloc(sizeof(char) * strlen(ip_cur));
+	strcpy(gw_sec_ip, ip_cur);
+	gw_sec_port = port_cur;
+	gw_pri_ip = malloc(sizeof(char) * strlen(ip_pri));
+	strcpy(gw_pri_ip, ip_pri);
+	gw_pri_port = port_pri;
+
+	int sock_pri;
+    	struct sockaddr_in server_pri;
+	sock_pri = socket(AF_INET , SOCK_STREAM , 0);
+	if (sock_pri == -1)
+        {
+        	printf("Could not create socket");
+    	}
+
+	puts("Socket created");
+     
+    	server_pri.sin_addr.s_addr = inet_addr( gw_pri_ip );
+    	server_pri.sin_family = AF_INET;
+    	server_pri.sin_port = htons( gw_pri_port );
+
+	//Connect to Primary GW
+    	if (connect(sock_pri , (struct sockaddr *)&server_pri , sizeof(server_pri)) < 0)
+    	{
+    	    perror("connect failed. Error");
+    	    return 1;
+   	}
+
+	char sec_info[MSG_SIZE];
+	sprintf(sec_info, "%s,%u", gw_sec_ip, gw_sec_port);
+	write(sock_pri, sec_info, strlen(sec_info));
+	close(sock_pri);
+    }
 
     fclose(fp);
 
@@ -666,13 +734,13 @@ int main( int argc, char *argv[] )
     puts("Socket Created...");
 
     // Set host machine address as Any Incoming Address
-    skt.sin_addr.s_addr = inet_addr( ip );
+    skt.sin_addr.s_addr = inet_addr( ip_cur );
 
     // Set socket address format
     skt.sin_family = AF_INET;
 
     // Set port number
-    skt.sin_port = htons( port );
+    skt.sin_port = htons( port_cur );
 
     // Bind
     if( bind(skt_desc, (struct sockaddr *) &skt, sizeof(skt)) < 0 )
