@@ -721,7 +721,6 @@ int main( int argc, char *argv[] )
 	printf("Port is: %s\n", token2);
 	gw_sec_port = atoi(token2);
 
-	close(pri_skt_desc);
 	close(sock_pri);
 
     }  //This GW is the Secondary meaning we have all the information

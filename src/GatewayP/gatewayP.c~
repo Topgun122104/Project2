@@ -720,9 +720,7 @@ int main( int argc, char *argv[] )
 	token2 = strtok(NULL, "");
 	printf("Port is: %s\n", token2);
 	gw_sec_port = atoi(token2);
-	
 
-	close(pri_skt_desc);
 	close(sock_pri);
 
     }  //This GW is the Secondary meaning we have all the information
@@ -758,7 +756,6 @@ int main( int argc, char *argv[] )
 	close(sock_pri);
     }
 
-    puts("Otuside If statements!");
     fclose(fp);
 
     printf("Primary IP: %s\n", gw_pri_ip);
