@@ -662,8 +662,70 @@ int main( int argc, char *argv[] )
 
     port_pri = (unsigned short int) atoi(token);
 
-    //This GW is the Secondary meaning we have all the information
-    if(!strstr(ip_cur, ip_pri) || port_cur != port_pri)
+    //This GW is the primary (needs to open socket to listen for secondary IP/Port)
+    if(strstr(ip_cur, ip_pri) && port_cur == port_pri)
+    {
+	puts("I am Primary!");
+	gw_pri_ip = malloc(sizeof(char) * strlen(ip_pri));
+	strcpy(gw_pri_ip, ip_pri);
+	gw_pri_port = port_pri;
+
+	int pri_skt_desc;
+
+    	// Socket Addresses Data Type
+   	struct sockaddr_in pri_skt, server_pri;
+	socklen_t size = sizeof(pri_skt);
+	int sock_pri;
+	sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+	if (sock_pri == -1)
+        {
+        	printf("Could not create socket");
+    	}
+
+	puts("Socket created");
+     
+	int tru = 1;
+	if(setsockopt(sock_pri, SOL_SOCKET, SO_REUSEADDR, &tru, sizeof(int)) == -1)
+	{
+		perror("Sock Option Error");
+		exit(1);
+	}
+
+    	server_pri.sin_addr.s_addr = htonl(INADDR_ANY);
+    	server_pri.sin_family = AF_INET;
+    	server_pri.sin_port = htons( gw_pri_port );
+
+	if( bind(sock_pri, (struct sockaddr *) &server_pri, sizeof(server_pri)) < 0 )
+    	{
+     	   perror("Bind Failed");
+     	   return 1;
+   	}
+
+	char buf[MSG_SIZE];
+	int recv_len;
+	if(recv_len = recvfrom(sock_pri, buf, MSG_SIZE, 0, (struct sockaddr*) &pri_skt, &size) < 0)
+	{
+		perror("Error Receiving Data!");
+		exit(1);
+	}
+
+	printf("BUFFER: %s\n", buf);
+
+	char* token;
+	char* token2;
+	token = strtok(buf, ",");
+	printf("IP is: %s\n", token);
+	gw_sec_ip = malloc(sizeof(token));
+	strcpy(gw_sec_ip, token);
+	token2 = strtok(NULL, "");
+	printf("Port is: %s\n", token2);
+	gw_sec_port = atoi(token2);
+
+	close(pri_skt_desc);
+	close(sock_pri);
+
+    }  //This GW is the Secondary meaning we have all the information
+    else if(!strstr(ip_cur, ip_pri) || port_cur != port_pri)
     {
 	puts("I am Secondary!");
 	gw_sec_ip = malloc(sizeof(char) * strlen(ip_cur));
@@ -675,7 +737,8 @@ int main( int argc, char *argv[] )
 
 	int sock_pri;
     	struct sockaddr_in server_pri;
-	sock_pri = socket(AF_INET , SOCK_STREAM , 0);
+	int size = sizeof(server_pri);
+	sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
 	if (sock_pri == -1)
         {
         	printf("Could not create socket");
@@ -687,89 +750,19 @@ int main( int argc, char *argv[] )
     	server_pri.sin_family = AF_INET;
     	server_pri.sin_port = htons( gw_pri_port );
 
-	//Connect to Primary GW
-    	if (connect(sock_pri , (struct sockaddr *)&server_pri , sizeof(server_pri)) < 0)
-    	{
-    	    perror("connect failed. Error");
-    	    return 1;
-   	}
-
 	char sec_info[MSG_SIZE];
 	sprintf(sec_info, "%s,%u", gw_sec_ip, gw_sec_port);
-	write(sock_pri, sec_info, strlen(sec_info));
+	sendto(sock_pri, sec_info, strlen(sec_info), 0, (struct sockaddr*) &server_pri, size);
 	printf("SENT: %s\n", sec_info);
-	close(sock_pri);
-    }  //This GW is the primary (needs to open socket to listen for secondary IP/Port)
-    else if(strstr(ip_cur, ip_pri) && port_cur == port_pri)
-    {
-	puts("I am Primary!");
-	gw_pri_ip = malloc(sizeof(char) * strlen(ip_pri));
-	strcpy(gw_pri_ip, ip_pri);
-	gw_pri_port = port_pri;
-
-	int client_skt_desc;
-	size_t size;
-
-    	// Socket Addresses Data Type
-   	struct sockaddr_in client_skt;
-	int sock_pri;
-    	struct sockaddr_in server_pri;
-	sock_pri = socket(AF_INET , SOCK_STREAM , 0);
-	if (sock_pri == -1)
-        {
-        	printf("Could not create socket");
-    	}
-
-	puts("Socket created");
-
-	int tru = 1;
-	if(setsockopt(sock_pri, SOL_SOCKET, SO_REUSEADDR, &tru, sizeof(int)) == -1)
-	{
-		perror("Sock Option Error");
-		exit(1);
-	}
-     
-    	server_pri.sin_addr.s_addr = INADDR_ANY;
-    	server_pri.sin_family = AF_INET;
-    	server_pri.sin_port = htons( gw_pri_port );
-
-	if( bind(sock_pri, (struct sockaddr *) &server_pri, sizeof(server_pri)) < 0 )
-    	{
-     	   perror("Bind Failed");
-     	   return 1;
-   	}
-
-	if( listen(sock_pri, 1) < 0 )
-    	{
-     	   perror("Error while listening");
-      	   return 1;
-   	}
-
-	size = sizeof( struct sockaddr_in );
-
-	// Complete Connection with a Client
-    	if( client_skt_desc = accept(sock_pri, (struct sockaddr *) &client_skt, (socklen_t *) &size) )
-    	{
-    	    if( client_skt_desc < 0 ) 
-    	    {
-    	        perror("Connection Failed");
-    	        return 1;
-    	    }
-
-    	    puts("Connection Accepted...");
-	    char buf[MSG_SIZE];
-	    read(client_skt_desc, buf, MSG_SIZE);
-	    printf("BUFFER: %s\n", buf);
-
-   	}
-	close(client_skt_desc);
 	close(sock_pri);
     }
 
-    //Prevents Bind race condition
-    sleep(3);
-
     fclose(fp);
+
+    printf("Primary IP: %s\n", gw_pri_ip);
+    printf("Primary Port: %u\n", gw_pri_port);
+    printf("Seconday IP: %s\n", gw_sec_ip);
+    printf("Seconday Port: %u\n", gw_sec_port);
 
     // Socket Descriptor
     int skt_desc;
