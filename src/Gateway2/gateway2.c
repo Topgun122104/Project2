@@ -417,6 +417,97 @@ void deviceListener(void *ptr)
 	}
 }
 
+void heartbeat_send(void *ptr)
+{
+	puts("Inside HeartBeat Send...");
+	struct sockaddr_in server, sender;
+	int sock;
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+	
+	if(amPri)
+	{
+		puts("Primary Heartbeat...");
+		server.sin_addr.s_addr = inet_addr(gw_sec_ip);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(gw_sec_port);
+	}
+	else
+	{
+		puts("Secondary Heartbeat...");
+		server.sin_addr.s_addr = inet_addr(gw_pri_ip);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(gw_pri_port);
+	}
+
+	
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+	char* heart_msg = "ALIVE";
+	
+	while(1)
+	{
+		//Send a heartbeat status every 5 
+		puts("Sending Heartbeat...");
+		sendto(sock, heart_msg, strlen(heart_msg), 0, (struct sockaddr*) &server, sock_size);
+		puts("Heartbeat sent...");
+		sleep(5);
+	}
+}
+
+void heartbeat_recv(void *ptr)
+{
+	puts("Inside HeartBeat Recv...");
+	struct sockaddr_in server, sender;
+	char server_reply[512];
+	int sock;
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+	
+	if(amPri)
+	{
+		puts("Primary Heartbeat...");
+		server.sin_addr.s_addr = inet_addr(gw_pri_ip);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(gw_pri_port);
+	}
+	else
+	{
+		puts("Secondary Heartbeat...");
+		server.sin_addr.s_addr = inet_addr(gw_sec_ip);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(gw_sec_port);
+	}
+
+	
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+	char* heart_msg = "Y";
+	
+	while(1)
+	{
+		puts("Receiving Heartbeat...");
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("HEARTBEAT: %s\n", server_reply);
+		if(strstr(server_reply, "ALIVE"))
+		{
+			puts("Other gateway is alive...");
+		}
+		else
+		{
+			puts("Other gateway has crashed!");
+		}
+	}
+}
+
 // Gadget's Thread
 void *connection(void *skt_desc)
 {
@@ -1004,6 +1095,38 @@ int main( int argc, char *argv[] )
     vectorclock.keyChain = 0;
     vectorclock.gateway = 0;
     vectorclock.securitySystem = 0;
+
+    //Start the heartbeat messages between GWs
+    pthread_t hbeat1S_thread, hbeat2S_thread;
+    pthread_t hbeat1R_thread, hbeat2R_thread;
+    if(amPri)
+    {
+            if( pthread_create(&hbeat1R_thread, NULL, (void *) &heartbeat_recv, NULL) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
+
+	    sleep(1);
+
+ 	    if( pthread_create(&hbeat1S_thread, NULL, (void *) &heartbeat_send, NULL) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
+    } 
+    else 
+    {
+            if( pthread_create(&hbeat2R_thread, NULL, (void *) &heartbeat_recv, NULL) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
+
+	    sleep(1);
+
+	    if( pthread_create(&hbeat2S_thread, NULL, (void *) &heartbeat_send, NULL) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
+    }
     
     // Complete Connection with a Client
     while( client_skt_desc = accept(skt_desc, (struct sockaddr *) &client_skt, (socklen_t *) &size) )
