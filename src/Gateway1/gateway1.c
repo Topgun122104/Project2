@@ -31,6 +31,9 @@ char* gw_pri_ip = NULL;
 unsigned short int gw_pri_port = 0;
 int gw_index = 1;
 int amPri = 0;
+int sock_pri;
+int sock_sec;
+struct sockaddr_in pri_skt;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -203,7 +206,6 @@ void forwardMessage(char string[])
 	{
 		char msg2[100];
 		printf("------------ Is primary msg\n");
-		int sock_sec;
 		sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
     		struct sockaddr_in server_sec;
 		int size = sizeof(server_sec);
@@ -223,7 +225,6 @@ void forwardMessage(char string[])
 	else
 	{
 		printf("------------ Is secondary msg");
-		int sock_pri;
 		sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
     		struct sockaddr_in server_pri;
 		int size = sizeof(server_pri);
@@ -399,7 +400,27 @@ void *connection(void *skt_desc)
     char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE], cpy_msg[MSG_SIZE], sec_msg[MSG_SIZE];
     char* log_msg;
     char vc[MSG_SIZE];
+
+    socklen_t size = sizeof(pri_skt);
+    char buf[MSG_SIZE];
+    int recv_len;
+    if(client_skt_desc == sock_pri)
+    {
+  	printf("SOCK PRI! \n");
+        if(recv_len = recvfrom(sock_pri, buf, MSG_SIZE, 0, (struct sockaddr*) &pri_skt, &size) > 0)
+	    {
+		printf("BUFFER: %s\n", buf);
+	    }
+    }
     
+    else if(client_skt_desc == sock_sec)
+    {
+	printf("SOCK SEC! \n");
+        if(recv_len = recvfrom(sock_sec, buf, MSG_SIZE, 0, (struct sockaddr*) &pri_skt, &size) > 0)
+	    {
+		printf("BUFFER: %s\n", buf);  
+	    }
+    }
     // Receive Data from Client
     while( (read_size = recv(client_skt_desc, client_msg, sizeof(client_msg), 0)) > 0 )
     {
@@ -782,9 +803,8 @@ int main( int argc, char *argv[] )
 	int pri_skt_desc;
 
     	// Socket Addresses Data Type
-   	struct sockaddr_in pri_skt, server_pri;
+   	struct sockaddr_in server_pri;
 	socklen_t size = sizeof(pri_skt);
-	int sock_pri;
 	sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
 	if (sock_pri == -1)
         {
