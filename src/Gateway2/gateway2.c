@@ -237,8 +237,8 @@ void forwardMessage(char string[])
 
 		sprintf(msg2, "MSG FROM SECONDARY!!! %s", string);
 
-		sendto(sock_pri, string, strlen(string), 0, (struct sockaddr*) &server_pri, size);
-		printf("SENT to primary: %s\n", string);
+		sendto(sock_pri, msg2, strlen(string), 0, (struct sockaddr*) &server_pri, size);
+		printf("SENT to primary: %s\n", msg2);
 		close(sock_pri);
 	}	
 }
@@ -436,17 +436,19 @@ void *connection(void *skt_desc)
     char buf[MSG_SIZE];
     int recv_len;
 
-    pthread_t dev1_thread;
+    pthread_t dev1_thread, dev2_thread;
     if(client_skt_desc == sock_pri)
     {
+	    printf("EQUAL TO PRIMARY SOCKET!!!\n");
             if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_pri_port) < 0 )
             {
                 perror("Thread Creation Failed");
             }
-    } else if( client_skt_desc == sock_sec) 
+    } 
+    else if( client_skt_desc == sock_sec) 
     {
-            
-            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_sec_port) < 0 )
+            printf("EQUAL TO PRIMARY SOCKET!!!\n");
+            if( pthread_create(&dev2_thread, NULL, (void *) &deviceListener, (void *) &gw_sec_port) < 0 )
             {
                 perror("Thread Creation Failed");
             }
