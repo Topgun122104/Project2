@@ -17,6 +17,8 @@
 #define CMD_INSERT "insert"
 #define CMD_VALUE "currValue"
 #define CMD_SWITCH "switch"
+#define CMD_VECTOR "vectorClock"
+#define CMD_UPDATE "update"
 
 #define DOOR "Door"
 #define MOTION "Motion"
@@ -38,6 +40,17 @@ typedef struct gadget {
     int interval;
     int currValue;
 } GADGET;
+
+typedef struct devicelist {
+	char *doorIP;
+	char *motionIP;
+	char *keychainIP;
+	char *securitydeviceIP;
+	int doorPort;
+	int motionPort;
+	int keychainPort;
+	int securitydevicePort;
+} DEVICELIST;
 
 typedef struct DOORSTATE{
 	int time;

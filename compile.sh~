@@ -6,25 +6,25 @@ rm -rf output/*
 
 cp run.sh output/run.sh
 
-cd src/Database1
+cd src/DatabaseP
 make
-mv database1 ../../output
+mv databaseP ../../output
 
-cd ../Database2
+cd ../DatabaseS
 make
-mv database2 ../../output
+mv databaseS ../../output
 
 cd ../Door
 make
 mv door ../../output
 
-cd ../Gateway1
+cd ../GatewayP
 make
-mv gateway1 ../../output
+mv gatewayP ../../output
 
-cd ../Gateway2
+cd ../GatewayS
 make
-mv gateway2 ../../output
+mv gatewayS ../../output
 
 cd ../KeyChain
 make

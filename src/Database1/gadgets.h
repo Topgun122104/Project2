@@ -18,6 +18,7 @@
 #define CMD_VALUE "currValue"
 #define CMD_SWITCH "switch"
 #define CMD_VECTOR "vectorClock"
+#define CMD_UPDATE "update"
 
 #define DOOR "Door"
 #define MOTION "Motion"

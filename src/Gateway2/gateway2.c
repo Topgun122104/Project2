@@ -10,6 +10,7 @@
 
 // List of Devices and Sensors
 GADGET *gadget_list[MAX_CONNECTIONS];
+GADGET *global_list[MAX_CONNECTIONS];
 struct VECTORCLOCK vectorclock;
 int gadget_index = 0;
 int db_sock = -1;
@@ -28,6 +29,8 @@ char* gw_sec_ip = NULL;
 unsigned short int gw_sec_port = 0;
 char* gw_pri_ip = NULL;
 unsigned short int gw_pri_port = 0;
+int gw_index = 1;
+int amPri = 0;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -365,41 +368,104 @@ void *connection(void *skt_desc)
         // Register Case
         if( strncmp(command, CMD_REGISTER, strlen(CMD_REGISTER)) == 0 )
         {
-            char *t_gadgetType, *t_ip;
-            
-            getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
-            
-            gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
-            memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
-
-            gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
-            memcpy(gadget->ip, t_ip, strlen(t_ip));
-
-	    //Security System is off by default
-            if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    //This gateway is the coordinator
+	    if(amPri)
 	    {
-		gadget->state = (char *)malloc(sizeof(char) * 4);            
-                strcpy(gadget->state, OFF);
+		puts("Inside Primary Loop");
+		if(gw_index % 2 != 0)
+		{
+			puts("Device stays at this gateway!");
+            		char *t_gadgetType, *t_ip;
+            
+            		getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
+            
+            		gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
+            		memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
+
+            		gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
+            		memcpy(gadget->ip, t_ip, strlen(t_ip));
+
+	    		//Security System is off by default
+            		if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 4);            
+            		        strcpy(gadget->state, OFF);
+	    		}
+	    		else
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 3);            
+           		        strcpy(gadget->state, ON);
+	   		}
+
+            		gadget_list[gadget_index++] = gadget;
+
+            		// Creating list of the ports and ips to send to all devices            
+            		if (gadget_index == 5) {
+             		   sendDeviceListMulticast();
+            		}
+            
+           		 printGadgets();
+            
+	   		 if(strstr(gadget->gadgetType, DATABASE))
+	   		 {
+				db_sock = client_skt_desc;
+	   		 }
+
+			 gw_index++;
+		 }
+		 else
+	         {
+			//Send update message to switch to alternate GW
+			puts("Device is being reassigned!");
+			char switch_msg[MSG_SIZE];
+			sprintf(switch_msg, "Type:update;Action:%s,%u", gw_sec_ip, gw_sec_port);
+			printf("Switch Message: %s\n", switch_msg);
+			write(client_skt_desc, switch_msg, strlen(switch_msg));
+
+			gw_index++;
+			return;
+	   	 }
 	    }
+	    //This gateway is not the coordinator
 	    else
 	    {
-		gadget->state = (char *)malloc(sizeof(char) * 3);            
-                strcpy(gadget->state, ON);
+		 char *t_gadgetType, *t_ip;
+            
+            	 getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
+            
+            	 gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
+            	 memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
+
+            	 gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
+            	 memcpy(gadget->ip, t_ip, strlen(t_ip));
+
+	    	//Security System is off by default
+            	if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    	{
+			gadget->state = (char *)malloc(sizeof(char) * 4);            
+            	        strcpy(gadget->state, OFF);
+	    	}
+	    	else
+	    	{
+			gadget->state = (char *)malloc(sizeof(char) * 3);            
+           	        strcpy(gadget->state, ON);
+	   	}
+
+            	gadget_list[gadget_index++] = gadget;
+
+            	// Creating list of the ports and ips to send to all devices            
+            	if (gadget_index == 5) {
+             	   sendDeviceListMulticast();
+            	}
+            
+           	 printGadgets();
+            
+	   	 if(strstr(gadget->gadgetType, DATABASE))
+	   	 {
+			db_sock = client_skt_desc;
+	   	 }
+
 	    }
-
-            gadget_list[gadget_index++] = gadget;
-
-            // Creating list of the ports and ips to send to all devices            
-            if (gadget_index == 5) {
-                sendDeviceListMulticast();
-            }
-            
-            printGadgets();
-            
-			if(strstr(gadget->gadgetType, DATABASE))
-			{
-				db_sock = client_skt_desc;
-			}
         }
 
         // Current Temperature Value Case
@@ -434,11 +500,12 @@ void *connection(void *skt_desc)
             {
             	strcpy(gadget->state, action);
             }
-            printGadgets();
-			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 							gadget->port);
-			fprintf(logFile, "%s", log_msg);
-			fflush(logFile);
-			write(db_sock, log_msg, strlen(log_msg));
+            
+	    printGadgets();
+	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 					gadget->port);
+	    fprintf(logFile, "%s", log_msg);
+	    fflush(logFile);
+	    write(db_sock, log_msg, strlen(log_msg));
         }
         
         // vectorClock state case
@@ -481,19 +548,19 @@ void *connection(void *skt_desc)
         		        
         		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
         		        {
-        					struct sockaddr_in addrDest;
+        				struct sockaddr_in addrDest;
         			
-        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
-        					addrDest.sin_family = AF_INET;
-        					addrDest.sin_port = htons(gadget->port);
+        				addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        				addrDest.sin_family = AF_INET;
+        				addrDest.sin_port = htons(gadget->port);
         					
-        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
-        							(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
-        					{
-        						puts("Send failed");
-        						break;
-        					} 
-        		            printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+        				if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        					(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        				{
+        					puts("Send failed");
+        					break;
+        				} 
+        		                printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
 
         		        }
         		}
@@ -514,7 +581,7 @@ void *connection(void *skt_desc)
         	{
 			printf("Notice: User Home Time: %u\n\n",(unsigned)time(NULL));
           		sprintf(sec_msg, "Type:switch;Action:off");
-        	    // Send turn on message to security system
+        	        //Send turn on message to security system
            		int x;
           		for(x=0; x<gadget_index; x++)
        		    {
@@ -523,17 +590,17 @@ void *connection(void *skt_desc)
       		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
     		        {
       		        	struct sockaddr_in addrDest;        	  		
-      					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+      				addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
         	        	addrDest.sin_family = AF_INET;
         	        	addrDest.sin_port = htons(gadget->port);
         	        					
         	        	if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
-        	        			(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        	        		(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
         	       		{
         	     			puts("Send failed");
         	        		break;
         	       		} 
-    		            printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+    		                printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
     		        }
         	      }	    
         	      char* gw_log_msg = "User Came Home\n";
@@ -577,14 +644,6 @@ void *connection(void *skt_desc)
         }
         
         memset(out_msg, 0, sizeof(out_msg));
-        
-       // if( !isOn(gadget->state) )
-       // {
-       //     sprintf(out_msg,
-       //        "Type:%s;Action:%s",
-       //         CMD_SWITCH, ON);
-       //     gadget->state = "on";
-       // }
         
         write(client_skt_desc, out_msg, strlen(out_msg));
 
@@ -666,6 +725,7 @@ int main( int argc, char *argv[] )
     if(strstr(ip_cur, ip_pri) && port_cur == port_pri)
     {
 	puts("I am Primary!");
+	amPri = 1;
 	gw_pri_ip = malloc(sizeof(char) * strlen(ip_pri));
 	strcpy(gw_pri_ip, ip_pri);
 	gw_pri_port = port_pri;
@@ -714,11 +774,9 @@ int main( int argc, char *argv[] )
 	char* token;
 	char* token2;
 	token = strtok(buf, ",");
-	printf("IP is: %s\n", token);
 	gw_sec_ip = malloc(sizeof(token));
 	strcpy(gw_sec_ip, token);
 	token2 = strtok(NULL, "");
-	printf("Port is: %s\n", token2);
 	gw_sec_port = atoi(token2);
 
 	close(sock_pri);
@@ -757,11 +815,6 @@ int main( int argc, char *argv[] )
     }
 
     fclose(fp);
-
-    printf("Primary IP: %s\n", gw_pri_ip);
-    printf("Primary Port: %u\n", gw_pri_port);
-    printf("Seconday IP: %s\n", gw_sec_ip);
-    printf("Seconday Port: %u\n", gw_sec_port);
 
     // Socket Descriptor
     int skt_desc;

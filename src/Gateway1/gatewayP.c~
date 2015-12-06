@@ -28,6 +28,7 @@ char* gw_sec_ip = NULL;
 unsigned short int gw_sec_port = 0;
 char* gw_pri_ip = NULL;
 unsigned short int gw_pri_port = 0;
+int gw_index = 1;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -365,41 +366,55 @@ void *connection(void *skt_desc)
         // Register Case
         if( strncmp(command, CMD_REGISTER, strlen(CMD_REGISTER)) == 0 )
         {
-            char *t_gadgetType, *t_ip;
-            
-            getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
-            
-            gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
-            memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
-
-            gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
-            memcpy(gadget->ip, t_ip, strlen(t_ip));
-
-	    //Security System is off by default
-            if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    if(gw_index % 2 != 0)
 	    {
-		gadget->state = (char *)malloc(sizeof(char) * 4);            
-                strcpy(gadget->state, OFF);
+            	char *t_gadgetType, *t_ip;
+            
+            	getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
+            
+            	gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
+            	memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
+
+            	gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
+            	memcpy(gadget->ip, t_ip, strlen(t_ip));
+
+	    	//Security System is off by default
+            	if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    	{
+			gadget->state = (char *)malloc(sizeof(char) * 4);            
+            	    strcpy(gadget->state, OFF);
+	    	}
+	    	else
+	    	{
+			gadget->state = (char *)malloc(sizeof(char) * 3);            
+           	     strcpy(gadget->state, ON);
+	   	 }
+
+            	gadget_list[gadget_index++] = gadget;
+
+            	// Creating list of the ports and ips to send to all devices            
+            	if (gadget_index == 5) {
+             	   sendDeviceListMulticast();
+            	}
+            
+           	 printGadgets();
+            
+	   	 if(strstr(gadget->gadgetType, DATABASE))
+	   	 {
+			db_sock = client_skt_desc;
+	   	 }
+
+		 gw_index++;
 	    }
 	    else
 	    {
-		gadget->state = (char *)malloc(sizeof(char) * 3);            
-                strcpy(gadget->state, ON);
+		//Send update message to switch to alternate GW
+		char switch_msg[MSG_SIZE];
+		sprintf("Type:update;Action:%s", gw_sec_ip);
+		write(client_skt_desc, switch_msg, strlen(switch_msg));
+
+		gw_index++;
 	    }
-
-            gadget_list[gadget_index++] = gadget;
-
-            // Creating list of the ports and ips to send to all devices            
-            if (gadget_index == 5) {
-                sendDeviceListMulticast();
-            }
-            
-            printGadgets();
-            
-			if(strstr(gadget->gadgetType, DATABASE))
-			{
-				db_sock = client_skt_desc;
-			}
         }
 
         // Current Temperature Value Case
@@ -721,7 +736,7 @@ int main( int argc, char *argv[] )
 	printf("Port is: %s\n", token2);
 	gw_sec_port = atoi(token2);
 
-	//close(sock_pri);
+	close(sock_pri);
 
     }  //This GW is the Secondary meaning we have all the information
     else if(!strstr(ip_cur, ip_pri) || port_cur != port_pri)
