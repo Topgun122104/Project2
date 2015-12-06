@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #include "gadgets.h"
 
@@ -31,6 +32,9 @@ char* gw_pri_ip = NULL;
 unsigned short int gw_pri_port = 0;
 int gw_index = 1;
 int amPri = 0;
+int sock_pri;
+int sock_sec;
+struct sockaddr_in pri_skt;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -197,13 +201,10 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 // Send a copy of the message received from device to other gateway
 void forwardMessage(char string[])
 {
-	printf("----------------  Forwarding msg: %s\n",string);
+	char msg2[100];
 	//If it is the primary gateway, then send to sec
 	if(amPri == 1)
 	{
-		char msg2[100];
-		printf("------------ Is primary msg\n");
-		int sock_sec;
 		sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
     		struct sockaddr_in server_sec;
 		int size = sizeof(server_sec);
@@ -213,33 +214,35 @@ void forwardMessage(char string[])
 	    	server_sec.sin_addr.s_addr = inet_addr( gw_sec_ip );
 	    	server_sec.sin_family = AF_INET;
 	    	server_sec.sin_port = htons( gw_sec_port );
+
 		sprintf(msg2, "MSG FROM PRIMARY!!! %s", string);
+
 		sendto(sock_sec, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
 		printf("SENT to secondary: %s\n", msg2);
 		close(sock_sec);
 	}
 	
-	//Else, send to secondary
+	//Else, send to primary
 	else
 	{
-		char msg2[100];
-		printf("------------ Is secondary msg");
-		int sock_pri;
 		sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
     		struct sockaddr_in server_pri;
 		int size = sizeof(server_pri);
 
 		puts("Socket created");
-		sprintf(msg2, "MSG FROM SECONDARY!!! %s", string);	     
+	     
 	    	server_pri.sin_addr.s_addr = inet_addr( gw_pri_ip );
 	    	server_pri.sin_family = AF_INET;
 	    	server_pri.sin_port = htons( gw_pri_port );
 
-		sendto(sock_pri, msg2, strlen(msg2), 0, (struct sockaddr*) &server_pri, size);
-		printf("SENT to primary: %s\n", msg2);
+		sprintf(msg2, "MSG FROM SECONDARY!!! %s", string);
+
+		sendto(sock_pri, string, strlen(string), 0, (struct sockaddr*) &server_pri, size);
+		printf("SENT to primary: %s\n", string);
 		close(sock_pri);
 	}	
 }
+
 // Send multicast to all devices, except database, with list of messages
 void sendDeviceListMulticast() 
 {
@@ -384,6 +387,35 @@ int isOn(char *state)
     return ( strncmp(state, ON, strlen(ON)) == 0 ) ? 1 : 0;
 }
 
+void deviceListener(void *ptr)
+{
+	int port = *((int *)ptr);
+	int sock;
+	struct sockaddr_in server, sender;
+	char server_reply[512];
+	
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+	
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_family = AF_INET;
+	server.sin_port = htons(port);
+	
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+	
+	while(1)
+	{
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("OMG IT WORKED: From:127.0.0.1:%i Msg:%s Time:%u\n\n", port, server_reply, (unsigned)time(NULL));
+
+	}
+}
+
 // Gadget's Thread
 void *connection(void *skt_desc)
 {
@@ -399,7 +431,26 @@ void *connection(void *skt_desc)
     char client_msg[MSG_SIZE], msg[MSG_SIZE], out_msg[MSG_SIZE], cpy_msg[MSG_SIZE], sec_msg[MSG_SIZE];
     char* log_msg;
     char vc[MSG_SIZE];
-    
+
+    socklen_t size = sizeof(pri_skt);
+    char buf[MSG_SIZE];
+    int recv_len;
+
+    pthread_t dev1_thread;
+    if(client_skt_desc == sock_pri)
+    {
+            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_pri_port) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
+    } else if( client_skt_desc == sock_sec) 
+    {
+            
+            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_sec_port) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
+    }
     // Receive Data from Client
     while( (read_size = recv(client_skt_desc, client_msg, sizeof(client_msg), 0)) > 0 )
     {
@@ -407,6 +458,7 @@ void *connection(void *skt_desc)
         memset(msg, 0, sizeof(msg));
         memset(cpy_msg, 0, sizeof(cpy_msg));
         memset(sec_msg, 0, sizeof(sec_msg));
+	memset(buf, 0, sizeof(buf));
         strncpy(cpy_msg, client_msg, sizeof(client_msg));
         
         getCommands(client_msg, &command, &action);
@@ -537,6 +589,7 @@ void *connection(void *skt_desc)
             memset(gadget->state, 0, 3);
             if( strncmp (action, "offType", strlen("offType")) == 0)
             {
+
             	strcpy(gadget->state, "off");
             }
             else if( strncmp (action, "onType", strlen("onType")) == 0)
@@ -781,9 +834,8 @@ int main( int argc, char *argv[] )
 	int pri_skt_desc;
 
     	// Socket Addresses Data Type
-   	struct sockaddr_in pri_skt, server_pri;
+   	struct sockaddr_in server_pri;
 	socklen_t size = sizeof(pri_skt);
-	int sock_pri;
 	sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
 	if (sock_pri == -1)
         {
