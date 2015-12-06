@@ -14,6 +14,7 @@ GADGET *gadget_list[MAX_CONNECTIONS];
 GADGET *global_list[MAX_CONNECTIONS];
 struct VECTORCLOCK vectorclock;
 int gadget_index = 0;
+int global_index = 0;
 int db_sock = -1;
 FILE *logFile;
 int currDoor = 0;
@@ -205,6 +206,11 @@ void forwardMessage(char string[])
 	//If it is the primary gateway, then send to sec
 	if(amPri == 1)
 	{
+<<<<<<< Updated upstream
+=======
+		char msg2[100];
+		printf("------------ Is primary msg\n");
+>>>>>>> Stashed changes
 		sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
     		struct sockaddr_in server_sec;
 		int size = sizeof(server_sec);
@@ -222,9 +228,16 @@ void forwardMessage(char string[])
 		close(sock_sec);
 	}
 	
+<<<<<<< Updated upstream
 	//Else, send to primary
 	else
 	{
+=======
+	//Else, send to pri
+	else
+	{
+		printf("------------ Is secondary msg");
+>>>>>>> Stashed changes
 		sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
     		struct sockaddr_in server_pri;
 		int size = sizeof(server_pri);
@@ -235,8 +248,11 @@ void forwardMessage(char string[])
 	    	server_pri.sin_family = AF_INET;
 	    	server_pri.sin_port = htons( gw_pri_port );
 
+<<<<<<< Updated upstream
 		sprintf(msg2, "MSG FROM SECONDARY!!! %s", string);
 
+=======
+>>>>>>> Stashed changes
 		sendto(sock_pri, string, strlen(string), 0, (struct sockaddr*) &server_pri, size);
 		printf("SENT to primary: %s\n", string);
 		close(sock_pri);
@@ -435,6 +451,7 @@ void *connection(void *skt_desc)
     socklen_t size = sizeof(pri_skt);
     char buf[MSG_SIZE];
     int recv_len;
+<<<<<<< Updated upstream
 
     pthread_t dev1_thread;
     if(client_skt_desc == sock_pri)
@@ -450,6 +467,20 @@ void *connection(void *skt_desc)
             {
                 perror("Thread Creation Failed");
             }
+=======
+    if(client_skt_desc == sock_pri)
+    {
+  	printf("SOCK PRI! \n");
+        recvfrom(sock_pri, buf, MSG_SIZE, 0, (struct sockaddr*) &pri_skt, &size);
+	printf("BUFFER: %s\n", buf);
+    }
+    
+    else if(client_skt_desc == sock_sec)
+    {
+	printf("SOCK SEC! \n");
+        recvfrom(sock_sec, buf, MSG_SIZE, 0, (struct sockaddr*) &pri_skt, &size);
+	printf("BUFFER: %s\n", buf);  
+>>>>>>> Stashed changes
     }
     // Receive Data from Client
     while( (read_size = recv(client_skt_desc, client_msg, sizeof(client_msg), 0)) > 0 )
@@ -496,6 +527,8 @@ void *connection(void *skt_desc)
 	   		}
 
             		gadget_list[gadget_index++] = gadget;
+			global_list[global_index++] = gadget;
+			puts("Device added to local and global list...");
 
             		// Creating list of the ports and ips to send to all devices            
             		if (gadget_index == 5) {
@@ -513,8 +546,32 @@ void *connection(void *skt_desc)
 		 }
 		 else
 	         {
+			//Create Gadget and add to global list
+			char *t_gadgetType, *t_ip;
+            
+            		getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
+            
+            		gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
+            		memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
+
+            		gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
+            		memcpy(gadget->ip, t_ip, strlen(t_ip));
+
+	    		//Security System is off by default
+            		if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 4);            
+            		        strcpy(gadget->state, OFF);
+	    		}
+	    		else
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 3);            
+           		        strcpy(gadget->state, ON);
+	   		}
+
+            		global_list[global_index++] = gadget;
 			//Send update message to switch to alternate GW
-			puts("Device is being reassigned!");
+			puts("Device  added to global and is being reassigned!");
 			char switch_msg[MSG_SIZE];
 			sprintf(switch_msg, "Type:update;Action:%s,%u", gw_sec_ip, gw_sec_port);
 			printf("Switch Message: %s\n", switch_msg);
@@ -550,6 +607,7 @@ void *connection(void *skt_desc)
 	   	}
 
             	gadget_list[gadget_index++] = gadget;
+		puts("Device added to local list...");
 
             	// Creating list of the ports and ips to send to all devices            
             	if (gadget_index == 5) {
@@ -879,7 +937,7 @@ int main( int argc, char *argv[] )
 	token2 = strtok(NULL, "");
 	gw_sec_port = atoi(token2);
 
-	close(sock_pri);
+	//close(sock_pri);
 
     }  //This GW is the Secondary meaning we have all the information
     else if(!strstr(ip_cur, ip_pri) || port_cur != port_pri)
@@ -911,7 +969,7 @@ int main( int argc, char *argv[] )
 	sprintf(sec_info, "%s,%u", gw_sec_ip, gw_sec_port);
 	sendto(sock_pri, sec_info, strlen(sec_info), 0, (struct sockaddr*) &server_pri, size);
 	printf("SENT: %s\n", sec_info);
-	close(sock_pri);
+	//close(sock_pri);
     }
 
     fclose(fp);
