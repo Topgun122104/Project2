@@ -14,6 +14,7 @@ GADGET *gadget_list[MAX_CONNECTIONS];
 GADGET *global_list[MAX_CONNECTIONS];
 struct VECTORCLOCK vectorclock;
 int gadget_index = 0;
+int global_index = 0;
 int db_sock = -1;
 FILE *logFile;
 int currDoor = 0;
@@ -498,6 +499,8 @@ void *connection(void *skt_desc)
 	   		}
 
             		gadget_list[gadget_index++] = gadget;
+			global_list[global_index++] = gadget;
+			puts("Device added to local and global list...");
 
             		// Creating list of the ports and ips to send to all devices            
             		if (gadget_index == 5) {
@@ -514,9 +517,33 @@ void *connection(void *skt_desc)
 			 gw_index++;
 		 }
 		 else
-	         {
-			//Send update message to switch to alternate GW
-			puts("Device is being reassigned!");
+	         {	
+			//Create Gadget and add to global list
+			char *t_gadgetType, *t_ip;
+            
+            		getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
+            
+            		gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
+            		memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
+
+            		gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
+            		memcpy(gadget->ip, t_ip, strlen(t_ip));
+
+	    		//Security System is off by default
+            		if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 4);            
+            		        strcpy(gadget->state, OFF);
+	    		}
+	    		else
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 3);            
+           		        strcpy(gadget->state, ON);
+	   		}
+
+            		global_list[global_index++] = gadget;
+ 			//Send update message to switch to alternate GW
+			puts("Device  added to global and is being reassigned!");
 			char switch_msg[MSG_SIZE];
 			sprintf(switch_msg, "Type:update;Action:%s,%u", gw_sec_ip, gw_sec_port);
 			printf("Switch Message: %s\n", switch_msg);
@@ -552,6 +579,7 @@ void *connection(void *skt_desc)
 	   	}
 
             	gadget_list[gadget_index++] = gadget;
+		puts("Device added to local list...");
 
             	// Creating list of the ports and ips to send to all devices            
             	if (gadget_index == 5) {
