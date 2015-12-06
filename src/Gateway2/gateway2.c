@@ -440,7 +440,6 @@ void *connection(void *skt_desc)
     pthread_t dev1_thread, dev2_thread;
     if(client_skt_desc == sock_pri)
     {
-	    printf("EQUAL TO PRIMARY SOCKET!!!\n");
             if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_pri_port) < 0 )
             {
                 perror("Thread Creation Failed");
@@ -448,7 +447,6 @@ void *connection(void *skt_desc)
     } 
     else if( client_skt_desc == sock_sec) 
     {
-            printf("EQUAL TO PRIMARY SOCKET!!!\n");
             if( pthread_create(&dev2_thread, NULL, (void *) &deviceListener, (void *) &gw_sec_port) < 0 )
             {
                 perror("Thread Creation Failed");
@@ -922,11 +920,10 @@ int main( int argc, char *argv[] )
 	strcpy(gw_pri_ip, ip_pri);
 	gw_pri_port = port_pri;
 
-	int sock_pri;
     	struct sockaddr_in server_pri;
 	int size = sizeof(server_pri);
-	sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
-	if (sock_pri == -1)
+	sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+	if (sock_sec == -1)
         {
         	printf("Could not create socket");
     	}
@@ -939,9 +936,9 @@ int main( int argc, char *argv[] )
 
 	char sec_info[MSG_SIZE];
 	sprintf(sec_info, "%s,%u", gw_sec_ip, gw_sec_port);
-	sendto(sock_pri, sec_info, strlen(sec_info), 0, (struct sockaddr*) &server_pri, size);
+	sendto(sock_sec, sec_info, strlen(sec_info), 0, (struct sockaddr*) &server_pri, size);
 	printf("SENT: %s\n", sec_info);
-	close(sock_pri);
+	close(sock_sec);
     }
 
     fclose(fp);
