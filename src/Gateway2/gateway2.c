@@ -194,6 +194,52 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 	return str;
 }
 
+// Send a copy of the message received from device to other gateway
+void forwardMessage(char string[])
+{
+	printf("----------------  Forwarding msg: %s\n",string);
+	//If it is the primary gateway, then send to sec
+	if(amPri == 1)
+	{
+		char msg2[100];
+		printf("------------ Is primary msg\n");
+		int sock_sec;
+		sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+    		struct sockaddr_in server_sec;
+		int size = sizeof(server_sec);
+
+		puts("Socket created");
+	     
+	    	server_sec.sin_addr.s_addr = inet_addr( gw_sec_ip );
+	    	server_sec.sin_family = AF_INET;
+	    	server_sec.sin_port = htons( gw_sec_port );
+		sprintf(msg2, "MSG FROM PRIMARY!!! %s", string);
+		sendto(sock_sec, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
+		printf("SENT to secondary: %s\n", msg2);
+		close(sock_sec);
+	}
+	
+	//Else, send to secondary
+	else
+	{
+		char msg2[100];
+		printf("------------ Is secondary msg");
+		int sock_pri;
+		sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+    		struct sockaddr_in server_pri;
+		int size = sizeof(server_pri);
+
+		puts("Socket created");
+		sprintf(msg2, "MSG FROM SECONDARY!!! %s", string);	     
+	    	server_pri.sin_addr.s_addr = inet_addr( gw_pri_ip );
+	    	server_pri.sin_family = AF_INET;
+	    	server_pri.sin_port = htons( gw_pri_port );
+
+		sendto(sock_pri, msg2, strlen(msg2), 0, (struct sockaddr*) &server_pri, size);
+		printf("SENT to primary: %s\n", msg2);
+		close(sock_pri);
+	}	
+}
 // Send multicast to all devices, except database, with list of messages
 void sendDeviceListMulticast() 
 {
@@ -475,6 +521,7 @@ void *connection(void *skt_desc)
             {
                 gadget->currValue = atoi(action);
                 printGadgets();
+		forwardMessage(cpy_msg);
             }
             
 			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 						gadget->port);
@@ -502,6 +549,7 @@ void *connection(void *skt_desc)
             }
             
 	    printGadgets();
+	    forwardMessage(cpy_msg);
 	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 					gadget->port);
 	    fprintf(logFile, "%s", log_msg);
 	    fflush(logFile);

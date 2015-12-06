@@ -194,6 +194,52 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 	return str;
 }
 
+// Send a copy of the message received from device to other gateway
+void forwardMessage(char string[])
+{
+	printf("----------------  Forwarding msg: %s\n",string);
+	//If it is the primary gateway, then send to sec
+	if(amPri == 1)
+	{
+		char msg2[100];
+		printf("------------ Is primary msg\n");
+		int sock_sec;
+		sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+    		struct sockaddr_in server_sec;
+		int size = sizeof(server_sec);
+
+		puts("Socket created");
+	     
+	    	server_sec.sin_addr.s_addr = inet_addr( gw_sec_ip );
+	    	server_sec.sin_family = AF_INET;
+	    	server_sec.sin_port = htons( gw_sec_port );
+		sprintf(msg2, "MSG FROM PRIMARY!!! %s", string);
+		sendto(sock_sec, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
+		printf("SENT to secondary: %s\n", msg2);
+		close(sock_sec);
+	}
+	
+	//Else, send to pri
+	else
+	{
+		printf("------------ Is secondary msg");
+		int sock_pri;
+		sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+    		struct sockaddr_in server_pri;
+		int size = sizeof(server_pri);
+
+		puts("Socket created");
+	     
+	    	server_pri.sin_addr.s_addr = inet_addr( gw_pri_ip );
+	    	server_pri.sin_family = AF_INET;
+	    	server_pri.sin_port = htons( gw_pri_port );
+
+		sendto(sock_pri, string, strlen(string), 0, (struct sockaddr*) &server_pri, size);
+		printf("SENT to primary: %s\n", string);
+		close(sock_pri);
+	}	
+}
+
 // Send multicast to all devices, except database, with list of messages
 void sendDeviceListMulticast() 
 {
@@ -475,6 +521,7 @@ void *connection(void *skt_desc)
             {
                 gadget->currValue = atoi(action);
                 printGadgets();
+		forwardMessage(cpy_msg);
             }
             
 			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 						gadget->port);
@@ -490,6 +537,7 @@ void *connection(void *skt_desc)
             memset(gadget->state, 0, 3);
             if( strncmp (action, "offType", strlen("offType")) == 0)
             {
+
             	strcpy(gadget->state, "off");
             }
             else if( strncmp (action, "onType", strlen("onType")) == 0)
@@ -502,6 +550,7 @@ void *connection(void *skt_desc)
             }
             
 	    printGadgets();
+	    forwardMessage(cpy_msg);
 	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 					gadget->port);
 	    fprintf(logFile, "%s", log_msg);
 	    fflush(logFile);
