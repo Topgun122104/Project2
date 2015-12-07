@@ -346,7 +346,7 @@ int main(int argc , char *argv[])
         			fprintf(logFile, "%s", log_msg);
         			fflush(logFile);
         		}
-			else if ( strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE) ) == 0)
+			else if (strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0 || strncmp(type, CMD_CRASH, strlen(CMD_CRASH)) == 0)
         		{
 				puts("Updating IP to alternate GW...");
     				//Parse Current Gateway info
@@ -383,18 +383,26 @@ int main(int argc , char *argv[])
         					perror("connect failed. Error");
         					return 1;
     					}
-					//Resend the register to the new gateway
-					sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
+					//Resend the register to the new gateway only if load blanacing
+					if(strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0)
+					{
+						sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
             						d_type, d_ip, d_port, d_area);
+					}
+					
 					sock = new_sock;
 					puts("IP has been updated...");
+					memset(msg, 0, sizeof(msg));
+					memset(server_reply, 0, sizeof(server_reply));
+					sleep(5);
 					continue;
         			}
 				else
 				{
 					puts("Already on correct IP/Port");
 				}
-			}	
+			}
+		}	
 	
 			memset(msg, 0, sizeof(msg));
 			memset(server_reply, 0, sizeof(server_reply));

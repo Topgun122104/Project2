@@ -319,6 +319,22 @@ void sendDeviceListMulticast()
     printf("Send: To:multicast Msg:%s Time:%u\n\n", deviceList, (unsigned)time(NULL));
 }
 
+int alreadyExists(char* str)
+{
+	int result = 0;
+	int y;
+	for(y = 0; y < gadget_index; y++)
+	{
+		GADGET *local_gadget = gadget_list[y];
+		if(strstr(local_gadget->gadgetType, str))
+		{
+			result = 1;		
+		}
+	}
+	return result;
+	
+}
+
 // Print the latest information about Devices and Sensors
 void printGadgets()
 {
@@ -476,22 +492,14 @@ void deviceListener(void *ptr)
 
 void first_responder()
 {
-	//Set all gadget is local list to NULL
-	int y;
-        for(y=0; y<gadget_index; y++)
-        {
-		gadget_list[y] = NULL;
-	}
-
-	//puts("Gadget List cancelled...");
 	char up_msg[MSG_SIZE];
 	if(amPri)
 	{
-		sprintf(up_msg, "Type:update;Action:%s,%u", gw_pri_ip, gw_pri_port);
+		sprintf(up_msg, "Type:crash;Action:%s,%u", gw_pri_ip, gw_pri_port);
 	}
 	else
 	{
-		sprintf(up_msg, "%s,%u", gw_pri_ip, gw_pri_port);
+		sprintf(up_msg, "Type:crash;Action:%s,%u", gw_sec_ip, gw_sec_port);
 	}
 
 	//Update all devices in global list with alive GW IP
@@ -504,6 +512,12 @@ void first_responder()
 		
                 if(strcmp (gadget-> gadgetType, DATABASE) != 0)
        		{
+			//If the device is in the local list, dont bother sending update message
+			if(alreadyExists(gadget->gadgetType))
+			{
+				puts("Gadget already in right place...");
+				continue;
+			}
 			printf("Sending update message to %s\n", gadget->gadgetType);
 			struct sockaddr_in addrDest;
 	
@@ -535,16 +549,16 @@ void heartbeat_send(void *ptr)
 	if(amPri)
 	{
 		//puts("Primary Heartbeat...");
-		server.sin_addr.s_addr = inet_addr(gw_sec_ip);
+		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
-		server.sin_port = htons(gw_sec_port);
+		server.sin_port = htons(2222);
 	}
 	else
 	{
 		//puts("Secondary Heartbeat...");
-		server.sin_addr.s_addr = inet_addr(gw_pri_ip);
+		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
-		server.sin_port = htons(gw_pri_port);
+		server.sin_port = htons(1111);
 	}
 
 	
@@ -592,16 +606,16 @@ void heartbeat_recv(void *ptr)
 	if(amPri)
 	{
 		//puts("Primary Heartbeat...");
-		server.sin_addr.s_addr = inet_addr(gw_pri_ip);
+		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
-		server.sin_port = htons(gw_pri_port);
+		server.sin_port = htons(1111);
 	}
 	else
 	{
 		//puts("Secondary Heartbeat...");
-		server.sin_addr.s_addr = inet_addr(gw_sec_ip);
+		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
-		server.sin_port = htons(gw_sec_port);
+		server.sin_port = htons(2222);
 	}
 
 	
@@ -679,6 +693,7 @@ void *connection(void *skt_desc)
         strncpy(cpy_msg, client_msg, sizeof(client_msg));
         
         getCommands(client_msg, &command, &action);
+	printf("Connection Accepted from: %s\n", action);
 
         // Register Case
         if( strncmp(command, CMD_REGISTER, strlen(CMD_REGISTER)) == 0 )

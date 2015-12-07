@@ -19,6 +19,7 @@
 #define CMD_SWITCH "switch"
 #define CMD_VECTOR "vectorClock"
 #define CMD_UPDATE "update"
+#define CMD_CRASH "crash"
 
 #define DOOR "Door"
 #define MOTION "Motion"

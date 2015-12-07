@@ -452,7 +452,7 @@ int main(int argc , char *argv[])
         	{
         		saveDevices(server_reply, s_ip, s_port);
         	}
-		else if ( strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE) ) == 0 )
+		else if (strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0 || strncmp(type, CMD_CRASH, strlen(CMD_CRASH)) == 0)
         	{
 			puts("Updating IP to alternate GW...");
 
@@ -494,12 +494,16 @@ int main(int argc , char *argv[])
     				}
 	
 				//Resend the register to the new gateway
-				//sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
-            			//	s_type, s_ip, s_port, s_area);
 				sock = new_sock;
-				//write(sock, msg, strlen(msg));
-				//memset(msg, 0, sizeof(msg));
+				if(strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0)
+				{
+					sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
+            					s_type, s_ip, s_port, s_area);
+					write(sock, msg, strlen(msg));
+					memset(msg, 0, sizeof(msg));
+				}
 				puts("IP has been updated...");
+				sleep(5);
 				continue;
 				}
         		}
