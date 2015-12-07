@@ -36,6 +36,7 @@ int amPri = 0;
 int sock_pri;
 int sock_sec;
 struct sockaddr_in pri_skt;
+int num_gws = 2;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -249,12 +250,29 @@ void sendDeviceListMulticast()
 {
 	char deviceList[MSG_SIZE];
 	int x;
+	int index = 0;
+	if(num_gws == 2)
+	{
+		index = gadget_index;
+	}
+	else
+	{
+		index = global_index;
+	}
 	strcpy(deviceList, "DeviceList");
 	
 	// Creating the device list to send to all devices
-    for(x=0; x<gadget_index; x++)
+    for(x=0; x<index; x++)
     {
-        GADGET *gadget = gadget_list[x];
+	GADGET *gadget;
+	if(num_gws == 2)
+	{
+		gadget = gadget_list[x];
+	}
+	else
+	{
+		gadget = global_list[x];
+	}
         char comma[2] = ",";
         char portChar[10];
         char line[20];        
@@ -270,9 +288,17 @@ void sendDeviceListMulticast()
     }
         
     //Sending unicast for all devices with the deviceList
-    for(x=0; x<gadget_index; x++)
+    for(x=0; x<index; x++)
     {
-        GADGET *gadget = gadget_list[x];
+	GADGET *gadget;
+	if(num_gws == 2)
+	{
+		gadget = gadget_list[x];
+	}
+	else
+	{
+		gadget = global_list[x];
+	}
         
         if(strcmp (gadget-> gadgetType, DATABASE) != 0)
         {
@@ -299,30 +325,61 @@ void printGadgets()
 	
     printf("------------------------------------------------\n");
 
-    int x;
-    for(x=0; x<gadget_index; x++)
+    if(num_gws == 2)
     {
-        GADGET *gadget = gadget_list[x];
-	char msg[MSG_SIZE];
+	int x;
+  	for(x=0; x<gadget_index; x++)
+    	{
+        	GADGET *gadget = gadget_list[x];
+		char msg[MSG_SIZE];
 
-	if(!strstr(gadget->gadgetType, DATABASE))
-	{
-        	char* currStr = toString(gadget->currValue, gadget->gadgetType);
-		//If Security Device, we want to display current state instead of current value
-		if(strstr(gadget->gadgetType, SECURITYDEVICE))
+		if(!strstr(gadget->gadgetType, DATABASE))
 		{
-        		sprintf(msg, "%d----%s----%s----%u----%s----%d",
-                	  gadget->id, gadget->gadgetType, gadget->state, (unsigned)time(NULL), gadget->ip, gadget->port);
-		}
-		else
-		{
-			sprintf(msg, "%d----%s----%s----%u----%s----%d",
-                 		  gadget->id, gadget->gadgetType, currStr, (unsigned)time(NULL), gadget->ip, gadget->port);
-		}
+        		char* currStr = toString(gadget->currValue, gadget->gadgetType);
+			//If Security Device, we want to display current state instead of current value
+			if(strstr(gadget->gadgetType, SECURITYDEVICE))
+			{
+        			sprintf(msg, "%d----%s----%s----%u----%s----%d",
+                	  		gadget->id, gadget->gadgetType, gadget->state, (unsigned)time(NULL), gadget->ip, gadget->port);
+			}
+			else
+			{
+				sprintf(msg, "%d----%s----%s----%u----%s----%d",
+                 		  	gadget->id, gadget->gadgetType, currStr, (unsigned)time(NULL), gadget->ip, gadget->port);
+			}
 
-	}
-	puts(msg);      
+		}
+		puts(msg); 
+         }
     }
+    else
+    {
+	int x;
+    	for(x=0; x<global_index; x++)
+    	{
+        	GADGET *gadget = global_list[x];
+		char msg[MSG_SIZE];
+
+		if(!strstr(gadget->gadgetType, DATABASE))
+		{
+        		char* currStr = toString(gadget->currValue, gadget->gadgetType);
+			//If Security Device, we want to display current state instead of current value
+			if(strstr(gadget->gadgetType, SECURITYDEVICE))
+			{
+        			sprintf(msg, "%d----%s----%s----%u----%s----%d",
+                	  		gadget->id, gadget->gadgetType, gadget->state, (unsigned)time(NULL), gadget->ip, gadget->port);
+			}
+			else
+			{
+				sprintf(msg, "%d----%s----%s----%u----%s----%d",
+                 		        gadget->id, gadget->gadgetType, currStr, (unsigned)time(NULL), gadget->ip, gadget->port);
+			}
+
+		}
+		puts(msg);
+         } 
+    }
+         
     puts("------------------------------------------------");
 }
 
@@ -417,9 +474,56 @@ void deviceListener(void *ptr)
 	}
 }
 
+void first_responder()
+{
+	//Set all gadget is local list to NULL
+	int y;
+        for(y=0; y<gadget_index; y++)
+        {
+		gadget_list[y] = NULL;
+	}
+
+	//puts("Gadget List cancelled...");
+	char up_msg[MSG_SIZE];
+	if(amPri)
+	{
+		sprintf(up_msg, "Type:update;Action:%s,%u", gw_pri_ip, gw_pri_port);
+	}
+	else
+	{
+		sprintf(up_msg, "%s,%u", gw_pri_ip, gw_pri_port);
+	}
+
+	//Update all devices in global list with alive GW IP
+	int x;
+	//Global Index will get larger as things register
+	int global_temp = global_index;
+        for(x=0; x<global_temp; x++)
+        {
+        	GADGET *gadget = global_list[x];
+		
+                if(strcmp (gadget-> gadgetType, DATABASE) != 0)
+       		{
+			printf("Sending update message to %s\n", gadget->gadgetType);
+			struct sockaddr_in addrDest;
+	
+			addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+			addrDest.sin_family = AF_INET;
+			addrDest.sin_port = htons(gadget->port);
+			if( sendto(gadget->id, up_msg , strlen(up_msg) , 0, 
+					(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+			{
+				puts("Send failed");
+				break;
+			} 
+       		}
+        }
+	puts("First Responder Triage Complete...");
+}
+
 void heartbeat_send(void *ptr)
 {
-	puts("Inside HeartBeat Send...");
+	//puts("Inside HeartBeat Send...");
 	struct sockaddr_in server, sender;
 	int sock;
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -430,14 +534,14 @@ void heartbeat_send(void *ptr)
 	
 	if(amPri)
 	{
-		puts("Primary Heartbeat...");
+		//puts("Primary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr(gw_sec_ip);
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gw_sec_port);
 	}
 	else
 	{
-		puts("Secondary Heartbeat...");
+		//puts("Secondary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr(gw_pri_ip);
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gw_pri_port);
@@ -451,18 +555,32 @@ void heartbeat_send(void *ptr)
 	
 	while(1)
 	{
+		//One gateway has failed and heartbeats are no longer necessary
+		if(num_gws < 2)
+		{
+			puts("Stopping HeartBeat...");
+			puts("Calling First Responder...");
+			//Alive GW takes over everything
+			first_responder();
+			return;
+		}
 		//Send a heartbeat status every 5 
-		puts("Sending Heartbeat...");
-		sendto(sock, heart_msg, strlen(heart_msg), 0, (struct sockaddr*) &server, sock_size);
-		puts("Heartbeat sent...");
-		sleep(5);
+		//puts("Sending Heartbeat...");		
+		int n = 0;
+		n = sendto(sock, heart_msg, strlen(heart_msg), 0, (struct sockaddr*) &server, sock_size);
+
+		//puts("Heartbeat sent...");
+		sleep(3);
 	}
 }
 
 void heartbeat_recv(void *ptr)
 {
-	puts("Inside HeartBeat Recv...");
+	//puts("Inside HeartBeat Recv...");
 	struct sockaddr_in server, sender;
+	struct timeval timeout;
+	timeout.tv_sec = 6;
+	timeout.tv_usec = 0;
 	char server_reply[512];
 	int sock;
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -473,14 +591,14 @@ void heartbeat_recv(void *ptr)
 	
 	if(amPri)
 	{
-		puts("Primary Heartbeat...");
+		//puts("Primary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr(gw_pri_ip);
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gw_pri_port);
 	}
 	else
 	{
-		puts("Secondary Heartbeat...");
+		//puts("Secondary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr(gw_sec_ip);
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gw_sec_port);
@@ -488,24 +606,31 @@ void heartbeat_recv(void *ptr)
 
 	
 	bind(sock, (struct sockaddr *)&server, sizeof(server));
+	if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) < 0)
+	{
+		perror("Socket Timeout Failed!");
+	}
 
 	size_t sock_size = sizeof(struct sockaddr_in);
-	char* heart_msg = "Y";
 	
 	while(1)
 	{
-		puts("Receiving Heartbeat...");
-		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("HEARTBEAT: %s\n", server_reply);
-		if(strstr(server_reply, "ALIVE"))
+		//puts("Receiving Heartbeat...");
+		int n = 0;
+		n = recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		if(n <= 0)
 		{
-			puts("Other gateway is alive...");
+			puts("Gateway has failed!!");
+			num_gws--;
+			return;
 		}
-		else
-		{
-			puts("Other gateway has crashed!");
-		}
+		
+		//printf("HEARTBEAT: %s\n", server_reply);
+		
+		memset(server_reply, 0, sizeof(server_reply));
+
 	}
+	close(sock);
 }
 
 // Gadget's Thread
@@ -562,7 +687,8 @@ void *connection(void *skt_desc)
 	    if(amPri)
 	    {
 		puts("Inside Primary Loop");
-		if(gw_index % 2 != 0)
+		//Device stays
+		if(gw_index % 2 != 0 || num_gws < 2)
 		{
 			puts("Device stays at this gateway!");
             		char *t_gadgetType, *t_ip;
@@ -586,15 +712,29 @@ void *connection(void *skt_desc)
 				gadget->state = (char *)malloc(sizeof(char) * 3);            
            		        strcpy(gadget->state, ON);
 	   		}
-
-            		gadget_list[gadget_index++] = gadget;
+			
+			if(num_gws == 2)
+			{
+				gadget_list[gadget_index++] = gadget;
+			}
+			
 			global_list[global_index++] = gadget;
-			puts("Device added to local and global list...");
+			puts("Device added to *local* and global list...");
 
-            		// Creating list of the ports and ips to send to all devices            
-            		if (gadget_index == 5) {
-             		   sendDeviceListMulticast();
-            		}
+            		// Creating list of the ports and ips to send to all devices 
+
+			if(num_gws == 2)
+			{
+            			if (gadget_index == 5) {
+             				sendDeviceListMulticast();
+            			}
+			}
+            		else
+			{
+				if (global_index == 5) {
+             				sendDeviceListMulticast();
+            			}
+			}
             
            		 printGadgets();
             
@@ -605,7 +745,8 @@ void *connection(void *skt_desc)
 
 			 gw_index++;
 		 }
-		 else
+		 //Device Goes
+		 else if(num_gws == 2)
 	         {	
 			//Create Gadget and add to global list
 			char *t_gadgetType, *t_ip;
@@ -671,6 +812,7 @@ void *connection(void *skt_desc)
 		puts("Device added to local list...");
 
             	// Creating list of the ports and ips to send to all devices            
+
             	if (gadget_index == 5) {
              	   sendDeviceListMulticast();
             	}
@@ -762,28 +904,56 @@ void *connection(void *skt_desc)
         		sprintf(sec_msg, "Type:switch;Action:off");
         		// Send turn on message to security system
         		int x;
-        		for(x=0; x<gadget_index; x++)
-        		{
-        		        GADGET *gadget = gadget_list[x];
-        		        
-        		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
-        		        {
-        				struct sockaddr_in addrDest;
-        			
-        				addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
-        				addrDest.sin_family = AF_INET;
-        				addrDest.sin_port = htons(gadget->port);
+			if(num_gws == 2)
+			{
+        			for(x=0; x<gadget_index; x++)
+        			{
+        			        GADGET *gadget = gadget_list[x];
+        			        
+        		 	       if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+        		 	       {
+        					struct sockaddr_in addrDest;
+        				
+        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        					addrDest.sin_family = AF_INET;
+        					addrDest.sin_port = htons(gadget->port);
         					
-        				if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
-        					(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
-        				{
-        					puts("Send failed");
-        					break;
-        				} 
-        		                printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        						(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        					{
+        						puts("Send failed");
+        						break;
+        					} 
+        		      		        printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
 
-        		        }
-        		}
+        		       	       }
+        			}
+			}
+			else
+			{
+				for(x=0; x<global_index; x++)
+        			{
+        			        GADGET *gadget = global_list[x];
+        			        
+        		 	       if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+        		 	       {
+        					struct sockaddr_in addrDest;
+        				
+        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        					addrDest.sin_family = AF_INET;
+        					addrDest.sin_port = htons(gadget->port);
+        					
+        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        						(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        					{
+        						puts("Send failed");
+        						break;
+        					} 
+        		      		        printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+
+        		       	       }
+        			}
+			}
 	    
         		char* gw_log_msg = "User Came Home\n";
 			char* db_log_msg = "Type:insert;Action:User Came Home!\n";
@@ -803,63 +973,123 @@ void *connection(void *skt_desc)
           		sprintf(sec_msg, "Type:switch;Action:off");
         	        //Send turn on message to security system
            		int x;
-          		for(x=0; x<gadget_index; x++)
-       		    {
-     		        GADGET *gadget = gadget_list[x];
-        	   		        
-      		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
-    		        {
-      		        	struct sockaddr_in addrDest;        	  		
-      				addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
-        	        	addrDest.sin_family = AF_INET;
-        	        	addrDest.sin_port = htons(gadget->port);
-        	        					
-        	        	if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
-        	        		(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
-        	       		{
-        	     			puts("Send failed");
-        	        		break;
-        	       		} 
-    		                printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
-    		        }
-        	      }	    
-        	      char* gw_log_msg = "User Came Home\n";
-		      char* db_log_msg = "Type:insert;Action:User Came Home!\n";
-		      fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
-		      fflush(logFile);
-		      write(db_sock, db_log_msg, strlen(db_log_msg));
+			if(num_gws == 2)
+			{
+        			for(x=0; x<gadget_index; x++)
+        			{
+        			        GADGET *gadget = gadget_list[x];
+        			        
+        		 	       if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+        		 	       {
+        					struct sockaddr_in addrDest;
+        				
+        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        					addrDest.sin_family = AF_INET;
+        					addrDest.sin_port = htons(gadget->port);
+        					
+        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        						(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        					{
+        						puts("Send failed");
+        						break;
+        					} 
+        		      		        printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+
+        		       	       }
+        			}
+			}
+			else
+			{
+				for(x=0; x<global_index; x++)
+        			{
+        			        GADGET *gadget = global_list[x];
+        			        
+        		 	       if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+        		 	       {
+        					struct sockaddr_in addrDest;
+        				
+        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        					addrDest.sin_family = AF_INET;
+        					addrDest.sin_port = htons(gadget->port);
+        					
+        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        						(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        					{
+        						puts("Send failed");
+        						break;
+        					} 
+        		      		        printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+
+        		       	       }
+        			}
+			}
+        	        char* gw_log_msg = "User Came Home\n";
+		        char* db_log_msg = "Type:insert;Action:User Came Home!\n";
+		        fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
+		        fflush(logFile);
+		        write(db_sock, db_log_msg, strlen(db_log_msg));
         	}
 		else if(homeEmpty())
 		{
 			printf("Notice: User Gone Time:%u\n\n", (unsigned)time(NULL));
           		sprintf(sec_msg, "Type:switch;Action:on");
-        	    // Send turn on message to security system
+        	        // Send turn on message to security system
            		int x;
-          		for(x=0; x<gadget_index; x++)
-       		    {
-     		        GADGET *gadget = gadget_list[x];
-        	   		        
-      		        if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
-    		        {
-      		        	struct sockaddr_in addrDest;        	  		
-      					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
-        	        	addrDest.sin_family = AF_INET;
-        	        	addrDest.sin_port = htons(gadget->port);
-        	        					
-        	        	if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
-        	        			(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
-        	       		{
-        	     			puts("Send failed");
-        	        		break;
-        	       		} 
-    		            printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
-    		        }
-        	      }	    
-        	      char* gw_log_msg = "User Left Home\n";
-		      char* db_log_msg = "Type:insert;Action:User Left Home!\n";
-		      fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
-		      fflush(logFile);
-		      write(db_sock, db_log_msg, strlen(db_log_msg));
+			if(num_gws == 2)
+			{
+        			for(x=0; x<gadget_index; x++)
+        			{
+        			        GADGET *gadget = gadget_list[x];
+        			        
+        		 	       if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+        		 	       {
+        					struct sockaddr_in addrDest;
+        				
+        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        					addrDest.sin_family = AF_INET;
+        					addrDest.sin_port = htons(gadget->port);
+        					
+        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        						(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        					{
+        						puts("Send failed");
+        						break;
+        					} 
+        		      		        printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+
+        		       	       }
+        			}
+			}
+			else
+			{
+				for(x=0; x<global_index; x++)
+        			{
+        			        GADGET *gadget = global_list[x];
+        			        
+        		 	       if(strcmp (gadget-> gadgetType, SECURITYDEVICE) == 0)
+        		 	       {
+        					struct sockaddr_in addrDest;
+        				
+        					addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
+        					addrDest.sin_family = AF_INET;
+        					addrDest.sin_port = htons(gadget->port);
+        					
+        					if( sendto(gadget->id, sec_msg , strlen(sec_msg) , 0, 
+        						(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
+        					{
+        						puts("Send failed");
+        						break;
+        					} 
+        		      		        printf("Send: To: securitydevice Msg:%s Time:%u\n\n", sec_msg, (unsigned)time(NULL));
+
+        		       	       }
+        			}
+			}	    
+        	        char* gw_log_msg = "User Left Home\n";
+		        char* db_log_msg = "Type:insert;Action:User Left Home!\n";
+		        fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
+		        fflush(logFile);
+		        write(db_sock, db_log_msg, strlen(db_log_msg));
 		}
         }
         

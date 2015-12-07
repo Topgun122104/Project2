@@ -12,8 +12,8 @@ struct VECTORCLOCK vectorclock;
 GADGET *gadget_list[MAX_CONNECTIONS];
 int gadget_index = 0;
 int *input;
-int array_size;
-FILE *logFile; 
+int array_size; 
+FILE *logFile;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -30,13 +30,13 @@ void updateVectorClock(char* msg) {
     	s = atoi(strtok(NULL, "-"));
 		
 	vectorclock.door = max(vectorclock.door, d);
-	vectorclock.motion++;
-	//vectorclock.motion = max(vectorclock.motion, m);
-	vectorclock.keyChain = max(vectorclock.keyChain, k);
+	vectorclock.keyChain++;
+	vectorclock.motion = max(vectorclock.motion, m);
+	//vectorclock.keyChain = max(vectorclock.keyChain, k);
 	vectorclock.gateway = max(vectorclock.gateway, g);
 	vectorclock.securitySystem = max(vectorclock.securitySystem, s);
 	
-    char vc[MSG_SIZE];	
+    char vc[MSG_SIZE];
     sprintf(vc, "VectorClock:%d-%d-%d-%d-%d,\n",
 			vectorclock.door, vectorclock.motion,
 			vectorclock.keyChain, vectorclock.gateway,
@@ -63,7 +63,7 @@ void sendMulticast(char *vectorMsg, int s)
 		
 		if (sock == -1)
 			puts("couldnt create socket");
-		
+				
 		GADGET *gadget = gadget_list[x];
 		server.sin_addr.s_addr = inet_addr(gadget->ip);
 		server.sin_family = AF_INET;
@@ -122,11 +122,11 @@ int isOn(char *state)
 
 void *timer()
 {
-    FILE *fp = fopen("../SampleConfigurationFiles/SampleMotionInput.txt","r");
+    FILE *fp = fopen("../SampleConfigurationFiles/SampleKeychainInput.txt","r");
 
     if ( NULL == fp )
     {
-        perror("Motion Input File Read Failure");
+        perror("Keychain Input File Read Failure");
     }
 
     // Get the last line
@@ -167,15 +167,15 @@ void *timer()
         if( NULL != token2 )
             temper = strtok(NULL, "");
 
-        //Convert True or False to 1 or 0 respectively
-		if(strstr(temper, TRU))
-		{
-			val = 1;
-		}
-		else
-		{
-			val = 0;
-		}
+	//Convert True or False to 1 or 0 respectively
+        if(strstr(temper, TRU))
+	{
+		val = 1;
+	}
+	else
+	{
+		val = 0;
+	}
 
         int i;
         for(i=startTime; i<=endTime; i++)
@@ -232,7 +232,7 @@ void deviceListener(void *ptr)
 	{
 		char *command, *action;
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("Received: From:127.0.0.1:%i Msg:%s Time:%u,\n\n", port, server_reply, (unsigned)time(NULL));
+		printf("Received: From:127.0.0.1:%i Msg:%s Time:%u\n\n", port, server_reply, (unsigned)time(NULL));
 		getCommands(server_reply, &command, &action);
 		updateVectorClock(action);
 	}
@@ -252,7 +252,7 @@ int main(int argc , char *argv[])
 
     if ( NULL == logFile )
     {
-        perror("Motion Sensor Log File Read Failure");
+        perror("Keychain Sensor Log File Read Failure");
         return 1;
     }
 
@@ -315,10 +315,10 @@ int main(int argc , char *argv[])
     }
 
     int sock;
-    struct sockaddr_in server;    
+    struct sockaddr_in server;
+    //char message[1000];
     char *message;
     char server_reply[MSG_SIZE];
-    char reply[MSG_SIZE];
      
     //Create socket
     sock = socket(AF_INET , SOCK_STREAM , 0);
@@ -326,7 +326,7 @@ int main(int argc , char *argv[])
     {
         printf("Could not create socket");
     }
-    printf("Socket created: %i\n", sock);
+    puts("Socket created");
      
     server.sin_addr.s_addr = inet_addr( ip );
     server.sin_family = AF_INET;
@@ -360,7 +360,7 @@ int main(int argc , char *argv[])
     char *type, *action;
 
     int currValue = 0;
-    
+
     // Register Message
     char msg[MSG_SIZE];
     char log_msg[MSG_SIZE];
@@ -378,24 +378,24 @@ int main(int argc , char *argv[])
     vectorclock.keyChain = 0;
     vectorclock.gateway = 0;
     vectorclock.securitySystem = 0;
+
+    //fcntl(sock, F_SETFL, O_NONBLOCK);
     
     while(1)
     {
         printf("Send: To:Gateway Msg:%s Time:%u\n\n",msg, (unsigned)time(NULL));
-                
+        
         //Send message to gateway
-      	if(send(sock , msg , strlen(msg) , 0) < 0)
-      	{
-          	puts("Send failed"); 
-            break;
-        }
-                
-        memset(vc, 0, sizeof(vc));
-
+    	if(send(sock , msg , MSG_SIZE , 0) < 0)
+    	{
+    	 	puts("Send failed"); 
+    	 	break;
+    	}
+    	
         // Send multicast 
         if(gadget_index == 3)
         {
-            vectorclock.motion++;
+            vectorclock.keyChain++;
 
             sprintf(vc,
                 	    "Type:vectorClock;Action:%d-%d-%d-%d-%d",
@@ -403,16 +403,16 @@ int main(int argc , char *argv[])
         				vectorclock.keyChain, vectorclock.gateway,
         				vectorclock.securitySystem);
                 	
-             printf("Send: To:multicast Msg:%s Time:%u\n\n", vc, (unsigned)time(NULL));
+            printf("Send: To:multicast Msg:%s Time:%u\n\n", vc, (unsigned)time(NULL));
                 	
-             // Send multicast with msg to all devices
-             sendMulticast(vc, sock);
-           
+            // Send multicast with msg to all devices
+            sendMulticast(vc, sock);
+                         
          	if(send(sock , vc , strlen(vc) , 0) < 0)
          	{
-             	puts("Send failed"); 
+             	printf("Send failed\n"); 
                break;
-           }
+            }
         }
         
         fcntl(sock, F_SETFL, O_NONBLOCK);
@@ -471,11 +471,11 @@ int main(int argc , char *argv[])
     				}
 	
 				//Resend the register to the new gateway
-				sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
-            				s_type, s_ip, s_port, s_area);
+				//sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
+            			//	s_type, s_ip, s_port, s_area);
 				sock = new_sock;
-				write(sock, msg, strlen(msg));
-				memset(msg, 0, sizeof(msg));
+				//write(sock, msg, strlen(msg));
+				//memset(msg, 0, sizeof(msg));
 				puts("IP has been updated...");
 				continue;
 			}
@@ -485,10 +485,10 @@ int main(int argc , char *argv[])
 			}
         	}
         }
-        
+                
         if(gadget_index == 3)
         {
-            pthread_t dev1_thread, dev2_thread, dev3_thread;
+            pthread_t dev1_thread;
             
             if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &s_port) < 0 )
             {
@@ -496,6 +496,7 @@ int main(int argc , char *argv[])
                 return 1;
             }
         }
+
         // Wait for time interval (5 seconds default)
         sleep(interval);
 
@@ -505,21 +506,22 @@ int main(int argc , char *argv[])
             state_interval -= array_size;
 
         currValue = input[state_interval];
-
+        
         memset(msg, 0, sizeof(msg));
 
         if( isOn(state) )
         {            
-		sprintf(msg,
-                    "Type:currValue;Action:%d",
-                    currValue);
+             sprintf(msg,
+                  "Type:currValue;Action:%d",
+                  currValue);
         }
 
-	char* v = toString(currValue);
-	sprintf(log_msg, "Log Msg: %d,%s,%s,%u,%s,%d\n",
-                    sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
-	fprintf(logFile, "%s", log_msg);
-	fflush(logFile);
+    	
+		char* v = toString(currValue);
+		sprintf(log_msg, "%d,%s,%s,%u,%s,%d\n",
+						sock, s_type, v, (unsigned)time(NULL), s_ip, s_port);
+		fprintf(logFile, "%s", log_msg);
+		fflush(logFile);
     }
      
     fclose(logFile);

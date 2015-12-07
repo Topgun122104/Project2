@@ -432,16 +432,9 @@ int main(int argc , char *argv[])
 		else if ( strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE) ) == 0 )
         	{
 			puts("Updating IP to alternate GW...");
-			int new_sock; 
-			struct sockaddr_in new_server;
-			//Create socket to slternate gateway
-    			new_sock = socket(AF_INET , SOCK_STREAM , 0);
-    			if (new_sock == -1)
-    			{
-        			printf("Could not create new gateway socket");
-    			}
 
-    			//Parse Current Gateway info
+
+   			//Parse Current Gateway info
     			token = strtok(action, ",");
 
     			char* ip_cur = token;
@@ -452,24 +445,44 @@ int main(int argc , char *argv[])
     			}
 
     			int port_cur = (unsigned short int) atoi(token);
+
+			if(!strstr(ip_cur, s_ip) || port_cur != s_port)
+			{
+				int new_sock; 
+				struct sockaddr_in new_server;
+				//Create socket to slternate gateway
+    				new_sock = socket(AF_INET , SOCK_STREAM , 0);
+    				if (new_sock == -1)
+    				{
+        				printf("Could not create new gateway socket");
+    				}
+
     
-			new_server.sin_addr.s_addr = inet_addr( ip_cur );
-    			new_server.sin_family = AF_INET;
-    			new_server.sin_port = htons( port_cur );
-			close(sock);
+				new_server.sin_addr.s_addr = inet_addr( ip_cur );
+    				new_server.sin_family = AF_INET;
+    				new_server.sin_port = htons( port_cur );
+				close(sock);
         			
-			//Connect to other gateway
-    			if (connect(new_sock , (struct sockaddr *)&new_server , sizeof(server)) < 0)
-    			{
-        			perror("connect failed. Error");
-        			return 1;
-    			}
-			//Resend the register to the new gateway
-			sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
+				//Connect to other gateway
+    				if (connect(new_sock , (struct sockaddr *)&new_server , sizeof(server)) < 0)
+    				{
+        				perror("connect failed. Error");
+        				return 1;
+    				}
+	
+				//Resend the register to the new gateway
+				sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
             				s_type, s_ip, s_port, s_area);
-			sock = new_sock;
-			puts("IP has been updated...");
-			continue;
+				sock = new_sock;
+				write(sock, msg, strlen(msg));
+				memset(msg, 0, sizeof(msg));
+				puts("IP has been updated...");
+				continue;
+			}
+			else
+			{
+				puts("Already on correct IP/Port");
+			}
         	}
         }
                 

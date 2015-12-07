@@ -394,8 +394,7 @@ int main(int argc , char *argv[])
 				{
 					puts("Already on correct IP/Port");
 				}
-			}
-		}	
+			}	
 	
 			memset(msg, 0, sizeof(msg));
 			memset(server_reply, 0, sizeof(server_reply));
