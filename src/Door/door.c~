@@ -502,16 +502,21 @@ int main(int argc , char *argv[])
 			memset(msg, 0, sizeof(msg));
 
 			puts("IP has been updated...");
+			sleep(5);
 			continue;
 		}
 	}
-        
-        printf("Send: To:Gateway Msg:%s Time:%u\n\n",msg, (unsigned)time(NULL));
+       
         // Send Gateway Current Monitored Value
-        if( send(sock , msg , strlen(msg) , 0) < 0)
-        {
-            perror("First Send failed");
-        }
+	if(msg[0] != 0)
+	{
+		printf("Send: To:Gateway Msg:%s Time:%u\n\n",msg, (unsigned)time(NULL));
+        	if( send(sock , msg , strlen(msg) , 0) < 0)
+       		{
+        	    perror("First Send failed");
+       		}
+	}
+
         
         // Send multicast 
         if(gadget_index == 3)

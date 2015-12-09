@@ -477,7 +477,7 @@ int main(int argc , char *argv[])
 				write(sock, msg, strlen(msg));
 				memset(msg, 0, sizeof(msg));
 			}
-			puts(5);
+			sleep(5);
 			continue;
 		}
 	}

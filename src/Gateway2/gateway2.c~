@@ -324,8 +324,8 @@ int alreadyExists(char* str)
 // Print the latest information about Devices and Sensors
 void printGadgets()
 {
-	
-    printf("------------------------------------------------\n");
+    puts("Inside Print!");
+    puts("------------------------------------------------");
 
         int x;
   	for(x=0; x<gadget_index; x++)
@@ -353,6 +353,7 @@ void printGadgets()
          }
          
     puts("------------------------------------------------");
+    puts("Print Complete!");
 }
 
 // Get the Type and Action from a received command
@@ -683,16 +684,13 @@ void *connection(void *skt_desc)
            		        strcpy(gadget->state, ON);
 	   		}
 			
-			if(num_gws == 2)
-			{
-				gadget_list[gadget_index++] = gadget;
-			}
-			
+			gadget_list[gadget_index++] = gadget;
 			global_list[global_index++] = gadget;
-			puts("Device added to *local* and global list...");
+			puts("Device added to local and global list...");
 
             		// Creating list of the ports and ips to send to all devices 
 
+			printf("Local Gadget Index: %d\n", gadget_index);
             		if (gadget_index == 5) {
              			sendDeviceListMulticast();
             		}
@@ -706,6 +704,7 @@ void *connection(void *skt_desc)
 	   		 }
 
 			 gw_index++;
+			 puts("Registration Complete!");
 		 }
 		 //Device Goes
 		 else if(num_gws == 2)

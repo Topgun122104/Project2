@@ -385,6 +385,7 @@ int main(int argc , char *argv[])
 			memset(msg, 0, sizeof(msg));
 
 			puts("IP has been updated...");
+			sleep(5);
 			continue;
 		}
 	}

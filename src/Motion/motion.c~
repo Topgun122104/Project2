@@ -470,13 +470,10 @@ int main(int argc , char *argv[])
 	
 			//Resend the register to the new gateway
 			sock = new_sock;
-			if(strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0)
-			{
-				sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
-            				s_type, s_ip, s_port, s_area);
-				write(sock, msg, strlen(msg));
-				memset(msg, 0, sizeof(msg));
-			}
+			sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
+            			s_type, s_ip, s_port, s_area);
+			write(sock, msg, strlen(msg));
+			memset(msg, 0, sizeof(msg));
 			puts("IP has been updated...");
 			sleep(5);
 			continue;

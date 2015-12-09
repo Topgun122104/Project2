@@ -251,14 +251,8 @@ void sendDeviceListMulticast()
 	char deviceList[MSG_SIZE];
 	int x;
 	int index = 0;
-	if(num_gws == 2)
-	{
-		index = gadget_index;
-	}
-	else
-	{
-		index = global_index;
-	}
+
+	index = gadget_index;
 	strcpy(deviceList, "DeviceList");
 	
 	// Creating the device list to send to all devices
@@ -324,8 +318,7 @@ int alreadyExists(char* str)
 // Print the latest information about Devices and Sensors
 void printGadgets()
 {
-	
-    printf("------------------------------------------------\n");
+    puts("------------------------------------------------");
 
         int x;
   	for(x=0; x<gadget_index; x++)
@@ -683,12 +676,16 @@ void *connection(void *skt_desc)
            		        strcpy(gadget->state, ON);
 	   		}
 			
-			gadget_list[gadget_index++] = gadget;
-			global_list[global_index++] = gadget;
-			puts("Device added to *local* and global list...");
+			if(!strstr(gadget->gadgetType, DATABASE))
+	    		{
+				gadget_list[gadget_index++] = gadget;
+				global_list[global_index++] = gadget;
+				puts("Device added to local and global list...");
+			}
 
             		// Creating list of the ports and ips to send to all devices 
 
+			printf("Local Gadget Index: %d\n", gadget_index);
             		if (gadget_index == 5) {
              			sendDeviceListMulticast();
             		}

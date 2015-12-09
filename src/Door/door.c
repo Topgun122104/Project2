@@ -506,13 +506,17 @@ int main(int argc , char *argv[])
 			continue;
 		}
 	}
-        
-        printf("Send: To:Gateway Msg:%s Time:%u\n\n",msg, (unsigned)time(NULL));
-        // Send Gateway Current Monitored Value
-        if( send(sock , msg , strlen(msg) , 0) < 0)
-        {
-            perror("First Send failed");
-        }
+       
+        // Send Gateway Current Monitored Value only if there is a value to send
+	if(msg[0] != 0)
+	{
+		printf("Send: To:Gateway Msg:%s Time:%u\n\n",msg, (unsigned)time(NULL));
+        	if( send(sock , msg , strlen(msg) , 0) < 0)
+       		{
+        	    perror("First Send failed");
+       		}
+	}
+
         
         // Send multicast 
         if(gadget_index == 3)
