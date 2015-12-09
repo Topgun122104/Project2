@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "gadgets.h"
 
@@ -14,6 +15,9 @@ int gadget_index = 0;
 int *input;
 int array_size; 
 FILE *logFile;
+char casualty_msg[MSG_SIZE];
+unsigned short int cas_port;
+int crash_flag = 0;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -238,6 +242,38 @@ void deviceListener(void *ptr)
 	}
 }
 
+void casualty(void *ptr)
+{
+	struct sockaddr_in server, sender;
+	int sock;
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_family = AF_INET;
+	cas_port += 100;
+	server.sin_port = htons(cas_port);
+
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+	
+	while(1)
+	{
+		int n = 0;
+		printf("Listening for First Responder on port: %u\n", cas_port);
+		recvfrom(sock, casualty_msg, sizeof(casualty_msg), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("CASUALTY: %s\n", casualty_msg);
+		crash_flag = 1;
+		close(sock);
+		return;
+	}
+	
+}
+
 int main(int argc , char *argv[])
 {
     FILE *fp = fopen(argv[1],"r");
@@ -311,11 +347,13 @@ int main(int argc , char *argv[])
     if( NULL != s_token3 )
     {
         s_port = (unsigned short int) atoi(s_token3);
+	cas_port = (unsigned short int) atoi(s_token3);
         s_area = atoi(strtok(NULL, ","));
     }
 
-    int sock;
-    struct sockaddr_in server;
+    sigignore(SIGPIPE);
+    int sock, new_sock;
+    struct sockaddr_in server, new_server;
     //char message[1000];
     char *message;
     char server_reply[MSG_SIZE];
@@ -379,17 +417,76 @@ int main(int argc , char *argv[])
     vectorclock.gateway = 0;
     vectorclock.securitySystem = 0;
 
-    //fcntl(sock, F_SETFL, O_NONBLOCK);
+
+    pthread_t casualty_thread;
+
+     if( pthread_create(&casualty_thread, NULL, (void *) &casualty, NULL) < 0 )
+     {
+             perror("Thread Creation Failed");
+     }
     
     while(1)
     {
+	if(crash_flag)
+	{
+		getCommands(casualty_msg, &type, &action);
+		crash_flag = 0;
+		puts("Updating IP to alternate GW...");
+
+
+   		//Parse Current Gateway info
+    		token = strtok(action, ",");
+
+    		char* ip_cur = token;
+
+    		if( NULL != token )
+    		{
+        		token = strtok(NULL, ",");
+    		}
+
+    		int port_cur = (unsigned short int) atoi(token);
+
+		if(!strstr(ip_cur, s_ip) || port_cur != s_port)
+		{
+			//Create socket to slternate gateway
+    			new_sock = socket(AF_INET , SOCK_STREAM , 0);
+    			if (new_sock == -1)
+    			{
+        			printf("Could not create new gateway socket");
+    			}
+
+    
+			new_server.sin_addr.s_addr = inet_addr( ip_cur );
+    			new_server.sin_family = AF_INET;
+    			new_server.sin_port = htons( port_cur );
+			close(sock);
+        			
+			//Connect to other gateway
+    			if (connect(new_sock , (struct sockaddr *)&new_server , sizeof(server)) < 0)
+    			{
+        			perror("connect failed. Error");
+        			return 1;
+    			}
+	
+			//Resend the register to the new gateway
+			sock = new_sock;
+			if(strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0)
+			{
+				sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
+            				s_type, s_ip, s_port, s_area);
+				write(sock, msg, strlen(msg));
+				memset(msg, 0, sizeof(msg));
+			}
+			sleep(5);
+			continue;
+		}
+	}
         printf("Send: To:Gateway Msg:%s Time:%u\n\n",msg, (unsigned)time(NULL));
         
         //Send message to gateway
     	if(send(sock , msg , MSG_SIZE , 0) < 0)
     	{
-    	 	puts("Send failed"); 
-    	 	break;
+    	 	perror("Send failed"); 
     	}
     	
         // Send multicast 
@@ -408,10 +505,10 @@ int main(int argc , char *argv[])
             // Send multicast with msg to all devices
             sendMulticast(vc, sock);
                          
-         	if(send(sock , vc , strlen(vc) , 0) < 0)
-         	{
-             	printf("Send failed\n"); 
-               break;
+            if(send(sock , vc , strlen(vc) , 0) < 0)
+            {
+             	perror("Send failed\n");
+		break; 
             }
         }
         
@@ -448,8 +545,6 @@ int main(int argc , char *argv[])
 
 			if(!strstr(ip_cur, s_ip) || port_cur != s_port)
 			{
-				int new_sock; 
-				struct sockaddr_in new_server;
 				//Create socket to slternate gateway
     				new_sock = socket(AF_INET , SOCK_STREAM , 0);
     				if (new_sock == -1)
@@ -472,13 +567,12 @@ int main(int argc , char *argv[])
 	
 				//Resend the register to the new gateway
 				sock = new_sock;
-				if(strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0)
-				{
-					sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
-            					s_type, s_ip, s_port, s_area);
-					write(sock, msg, strlen(msg));
-					memset(msg, 0, sizeof(msg));
-				}
+
+				sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
+            				s_type, s_ip, s_port, s_area);
+				write(sock, msg, strlen(msg));
+				memset(msg, 0, sizeof(msg));
+
 				puts("IP has been updated...");
 				continue;
 			}
