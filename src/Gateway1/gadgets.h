@@ -19,7 +19,6 @@
 #define CMD_SWITCH "switch"
 #define CMD_VECTOR "vectorClock"
 #define CMD_UPDATE "update"
-#define CMD_CRASH "crash"
 
 #define DOOR "Door"
 #define MOTION "Motion"
@@ -27,6 +26,14 @@
 #define SECURITYDEVICE "SecurityDevice"
 #define DATABASE "Database"
 
+#define PC_MSG "2PC:T"
+#define PC_PREPARE "Ready for commit?" 
+#define PC_VOTE_READY "Vote:ready"
+#define PC_VOTE_ABORT "Vote:abort"
+#define PC_MSG_COMMIT "Message:ready:"
+#define PC_MSG_ABORT "Message:abort"
+#define PC_WAIT_VOTE "Wait:vote"
+#define PC_MOV_ABORT "Moving:abort"
 #define CONFIRM "Device Registration Confirmed"
 
 #define INTERVAL 5

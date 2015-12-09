@@ -37,6 +37,10 @@ int sock_pri;
 int sock_sec;
 struct sockaddr_in pri_skt;
 int num_gws = 2;
+//0 if there is no new log, 1 if there is one
+int sending2PCMsg = 0;
+int newMsg = 0;
+struct sockaddr_in pri_skt;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -138,6 +142,194 @@ char* toString(int s, char* type)
 	return str;
 }
 
+
+void get2PCMsg(char string[], char **msg)
+{
+    char *tok, *tok2, *tok3;
+
+    tok = strtok(string, ":");
+
+    if( NULL != tok )
+        tok2 = strtok(NULL, ":");
+
+    if( NULL != tok2 )
+	tok3 = strtok(NULL, "\0");
+
+    *msg = tok3;
+}
+
+//Recv 2PC 
+void deviceListener(void *ptr)
+{
+	printf("-----CRETED DEV LISTENER");
+	int port = *((int *)ptr);
+	int sock;
+	struct sockaddr_in server, sender;
+	char server_reply[MSG_SIZE], msg1[MSG_SIZE];
+	char *pcMsg, *pcMsg2;
+    	char *tok, *tok2, *tok3;
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock == -1)
+	{
+		puts("Could not create socket");
+	}
+		printf("-----CRETED DEV LISTENER2");
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_family = AF_INET;
+	server.sin_port = htons(port);
+	
+	bind(sock, (struct sockaddr *)&server, sizeof(server));
+
+	size_t sock_size = sizeof(struct sockaddr_in);
+		printf("-----CRETED DEV LISTENER3");
+	while(1)
+	{
+	printf("-----CRETED DEV LISTENER- WHILE");
+		// Step 1. Receive 'ready to vote?' msg from coordinator
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("Step 1: Received: %s \n", server_reply);
+		get2PCMsg(server_reply, &pcMsg);
+
+		// Step 2. Send vote (ready or abort)
+		newMsg++;		
+		if( sending2PCMsg == 0)
+			sprintf(msg1, "%s%i:%s", PC_MSG, newMsg, PC_VOTE_READY);
+		else if( sending2PCMsg == 1)
+			sprintf(msg1, "%s%i:%s", PC_MSG, newMsg,PC_VOTE_ABORT);	
+		
+		printf("Step 2: Sent: %s \n", msg1);		
+		sendto(sock, msg1, strlen(msg1), 0, (struct sockaddr*) &sender, sock_size);
+
+		// Step 3. Receive 'msg ready/abort' from the coordinator
+		memset(server_reply, 0, sizeof(server_reply));
+		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
+		printf("Step 3: Received: %s \n", server_reply);
+		get2PCMsg(server_reply, &pcMsg2);
+
+		// Step 4. Update database if not abort, and send response
+		if(strncmp(pcMsg2, "Msg:ready", 9) == 0)
+		{
+			//TODO send message to the database
+		}
+		memset(msg1, 0, sizeof(msg1));
+		sprintf(msg1, "%s%i:%s", PC_MSG, newMsg, CONFIRM);
+		printf("Step 4: Sent: %s \n", msg1);
+		sendto(sock, msg1, strlen(msg1), 0, (struct sockaddr*) &sender, sock_size);		
+		break;
+	}
+}
+
+// Send 2PC message
+void send2PC(char log[])
+{
+    char msg1[MSG_SIZE], msg2[MSG_SIZE], secvMsg[MSG_SIZE];
+    char *pcMsg1;
+
+    printf("------------- IN 2PC!\n");
+    //If it is the primary gateway, then send to sec
+    if(amPri == 1)
+    {
+	sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+    	struct sockaddr_in server_sec, sender;
+	int size = sizeof(struct sockaddr_in);
+
+	puts("Socket created");
+	     
+	server_sec.sin_addr.s_addr = inet_addr( gw_sec_ip );
+	server_sec.sin_family = AF_INET;
+	server_sec.sin_port = htons( gw_sec_port );
+
+	newMsg++;
+	sprintf(msg1, "%s%i:%s", PC_MSG, newMsg, PC_PREPARE);
+
+	while(1)
+	{
+	    //TODO: Need to log each one of these 2PC interactions
+	    sending2PCMsg = 1;
+
+	    //Step 1. Send ready msg
+	    sendto(sock_sec, msg1, strlen(msg1), 0, (struct sockaddr*) &server_sec, size);
+	    printf("Step 1. Sending: : %s\n", msg1);
+
+	    //Step 2. Wait for recv msg
+	    recvfrom(sock_sec, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
+	    printf("Step 2. Received: %s \n", secvMsg);
+	    get2PCMsg(secvMsg, &pcMsg1);
+	    
+	    //Step 3. Send COMMIT msg and update log
+	    if(strncmp(pcMsg1, "Vote:ready", 10) == 0)
+	    	sprintf(msg2, "%s%i:%s%s", PC_MSG, newMsg, PC_MSG_COMMIT, log);
+	    	
+	    else if(strncmp(pcMsg1, "Vote:abort", 10) == 0)
+		sprintf(msg2, "%s%i:%s", PC_MSG, newMsg, PC_MSG_ABORT);
+
+	    sendto(sock_sec, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
+	    printf("Step 3. Sending: : %s\n", msg2);
+
+	    //Step 4. Wait for done msg
+	    memset(secvMsg, 0, sizeof(secvMsg));
+	    recvfrom(sock_sec, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
+	    printf("Step 4. Received: %s \n", secvMsg);
+
+	    close(sock_sec);
+	    sending2PCMsg = 0;
+	    break;
+	}
+    }
+	//Else, send to primary
+    else
+    {
+	sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+    	struct sockaddr_in server_sec, sender;
+	int size = sizeof(struct sockaddr_in);
+
+	puts("Socket created");
+	     
+	server_sec.sin_addr.s_addr = inet_addr( gw_sec_ip );
+	server_sec.sin_family = AF_INET;
+	server_sec.sin_port = htons( gw_sec_port );
+
+	newMsg++;
+	sprintf(msg1, "%s%i:%s", PC_MSG, newMsg, PC_PREPARE);
+
+	while(1)
+	{
+	    //TODO: Need to log each one of these 2PC interactions
+	    sending2PCMsg = 1;
+
+	    //Step 1. Send ready msg
+	    sendto(sock_pri, msg1, strlen(msg1), 0, (struct sockaddr*) &server_sec, size);
+	    printf("Step 1. Sending: : %s\n", msg1);
+
+	    //Step 2. Wait for recv msg
+	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
+	    printf("Step 2. Received: %s \n", secvMsg);
+	    get2PCMsg(secvMsg, &pcMsg1);
+	    
+	    //Step 3. Send COMMIT msg and update log
+	    if(strncmp(pcMsg1, "Vote:ready", 10) == 0)
+	    	sprintf(msg2, "%s%i:%s%s", PC_MSG, newMsg, PC_MSG_COMMIT, log);
+	    	
+	    else if(strncmp(pcMsg1, "Vote:abort", 10) == 0)
+		sprintf(msg2, "%s%i:%s", PC_MSG, newMsg, PC_MSG_ABORT);
+
+	    sendto(sock_pri, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
+	    printf("Step 3. Sending: : %s\n", msg2);
+
+	    //Step 4. Wait for done msg
+	    memset(secvMsg, 0, sizeof(secvMsg));
+	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
+	    printf("Step 4. Received: %s \n", secvMsg);
+
+	    close(sock_pri);
+	    sending2PCMsg = 0;
+	    break;
+	}
+    }	
+}
+
+
 char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 {
 	unsigned int stamp = (unsigned)time(NULL);
@@ -198,51 +390,6 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 	}
 
 	return str;
-}
-
-// Send a copy of the message received from device to other gateway
-void forwardMessage(char string[])
-{
-	char msg2[100];
-	//If it is the primary gateway, then send to sec
-	if(amPri == 1)
-	{
-		sock_sec = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
-    		struct sockaddr_in server_sec;
-		int size = sizeof(server_sec);
-
-		puts("Socket created");
-	     
-	    	server_sec.sin_addr.s_addr = inet_addr( gw_sec_ip );
-	    	server_sec.sin_family = AF_INET;
-	    	server_sec.sin_port = htons( gw_sec_port );
-
-		sprintf(msg2, "MSG FROM PRIMARY!!! %s", string);
-
-		sendto(sock_sec, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
-		printf("SENT to secondary: %s\n", msg2);
-		close(sock_sec);
-	}
-	
-	//Else, send to primary
-	else
-	{
-		sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
-    		struct sockaddr_in server_pri;
-		int size = sizeof(server_pri);
-
-		puts("Socket created");
-	     
-	    	server_pri.sin_addr.s_addr = inet_addr( gw_pri_ip );
-	    	server_pri.sin_family = AF_INET;
-	    	server_pri.sin_port = htons( gw_pri_port );
-
-		sprintf(msg2, "MSG FROM SECONDARY!!! %s", string);
-
-		sendto(sock_pri, msg2, strlen(string), 0, (struct sockaddr*) &server_pri, size);
-		printf("SENT to primary: %s\n", msg2);
-		close(sock_pri);
-	}	
 }
 
 // Send multicast to all devices, except database, with list of messages
@@ -408,35 +555,6 @@ void getInfo(char string[], char **gadgetType, char **ip, int *port, int *area)
 int isOn(char *state)
 {
     return ( strncmp(state, ON, strlen(ON)) == 0 ) ? 1 : 0;
-}
-
-void deviceListener(void *ptr)
-{
-	int port = *((int *)ptr);
-	int sock;
-	struct sockaddr_in server, sender;
-	char server_reply[512];
-	
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if(sock == -1)
-	{
-		puts("Could not create socket");
-	}
-	
-	server.sin_addr.s_addr = inet_addr("127.0.0.1");
-	server.sin_family = AF_INET;
-	server.sin_port = htons(port);
-	
-	bind(sock, (struct sockaddr *)&server, sizeof(server));
-
-	size_t sock_size = sizeof(struct sockaddr_in);
-	
-	while(1)
-	{
-		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("OMG IT WORKED: From:127.0.0.1:%i Msg:%s Time:%u\n\n", port, server_reply, (unsigned)time(NULL));
-
-	}
 }
 
 void first_responder()
@@ -619,6 +737,7 @@ void *connection(void *skt_desc)
     int recv_len;
 
     pthread_t dev1_thread, dev2_thread;
+    printf("---- client_skt = %i PRI=%i  SEC=%i\n", client_skt_desc, sock_pri, sock_sec);
     if(client_skt_desc == sock_pri)
     {
             if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_pri_port) < 0 )
@@ -790,12 +909,13 @@ void *connection(void *skt_desc)
             {
                 gadget->currValue = atoi(action);
                 printGadgets();
-		forwardMessage(cpy_msg);
             }
             
 			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 						gadget->port);
 			fprintf(logFile, "%s", log_msg);
 			fflush(logFile);
+			//printf("------------- SENDING 2PC!\n");
+	                //send2PC(log_msg);
 			write(db_sock, log_msg, strlen(log_msg));
         }
 
@@ -819,10 +939,12 @@ void *connection(void *skt_desc)
             }
             
 	    printGadgets();
-	    forwardMessage(cpy_msg);
+
 	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 					gadget->port);
 	    fprintf(logFile, "%s", log_msg);
 	    fflush(logFile);
+	    printf("------------- SENDING 2PC!\n");
+	    send2PC(log_msg);
 	    write(db_sock, log_msg, strlen(log_msg));
         }
         
@@ -836,6 +958,8 @@ void *connection(void *skt_desc)
 
 		    fprintf(logFile, "%s\n", log_msg);
 		    fflush(logFile);
+ 		    printf("------------- SENDING 2PC!\n");
+	            send2PC(log_msg);
 		    write(db_sock, log_msg, strlen(log_msg));
     		
         }
@@ -852,6 +976,8 @@ void *connection(void *skt_desc)
 			char* db_log_msg = "Type:insert;Action:ALARM SOUNDED!\n";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 			fflush(logFile);
+			printf("------------- SENDING 2PC!\n");
+	                send2PC(log_msg);
 			write(db_sock, db_log_msg, strlen(db_log_msg));
 		}
         	else if(userHome()) 
@@ -888,6 +1014,8 @@ void *connection(void *skt_desc)
 			char* db_log_msg = "Type:insert;Action:User Came Home!\n";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 			fflush(logFile);
+			printf("------------- SENDING 2PC!\n");
+	                send2PC(log_msg);
 			write(db_sock, db_log_msg, strlen(db_log_msg));
         	}
         }
@@ -930,6 +1058,8 @@ void *connection(void *skt_desc)
 		        char* db_log_msg = "Type:insert;Action:User Came Home!\n";
 		        fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 		        fflush(logFile);
+			printf("------------- SENDING 2PC!\n");
+	                send2PC(log_msg);
 		        write(db_sock, db_log_msg, strlen(db_log_msg));
         	}
 		else if(homeEmpty())
@@ -964,6 +1094,8 @@ void *connection(void *skt_desc)
         	        char* gw_log_msg = "User Left Home\n";
 		        char* db_log_msg = "Type:insert;Action:User Left Home!\n";
 		        fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
+			printf("------------- SENDING 2PC!\n");
+	                send2PC(log_msg);
 		        fflush(logFile);
 		        write(db_sock, db_log_msg, strlen(db_log_msg));
 		}
@@ -1202,8 +1334,13 @@ int main( int argc, char *argv[] )
     //Start the heartbeat messages between GWs
     pthread_t hbeat1S_thread, hbeat2S_thread;
     pthread_t hbeat1R_thread, hbeat2R_thread;
+    pthread_t dev1_thread, dev2_thread;
     if(amPri)
     {
+            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_pri_port) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
             if( pthread_create(&hbeat1R_thread, NULL, (void *) &heartbeat_recv, NULL) < 0 )
             {
                 perror("Thread Creation Failed");
@@ -1218,6 +1355,10 @@ int main( int argc, char *argv[] )
     } 
     else 
     {
+            if( pthread_create(&dev2_thread, NULL, (void *) &deviceListener, (void *) &gw_sec_port) < 0 )
+            {
+                perror("Thread Creation Failed");
+            }
             if( pthread_create(&hbeat2R_thread, NULL, (void *) &heartbeat_recv, NULL) < 0 )
             {
                 perror("Thread Creation Failed");
