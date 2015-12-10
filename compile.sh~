@@ -1,6 +1,10 @@
 #!/bin/bash
 
+cp output/run.sh ./
+
 rm -rf output/*
+
+cp run.sh output/run.sh
 
 cd src/Database1
 make

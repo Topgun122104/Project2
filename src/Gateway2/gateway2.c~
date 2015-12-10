@@ -916,7 +916,7 @@ void *connection(void *skt_desc)
 	   		 }
 
 			gw_index++;
-            		if(!strstr(gadget->gadgetType, DATABASE))
+            		if(!strstr(gadget->gadgetType, DATABASE) && num_gws == 2)
 	    		{
 				char switch_msg[MSG_SIZE];
 				sprintf(switch_msg, "Type:sync;Action:%s,%u", gw_sec_ip, gw_sec_port);
@@ -1318,7 +1318,8 @@ int main( int argc, char *argv[] )
     port_cur = (unsigned short int) atoi(token);
 
     //Parse Primary Gateway info
-    token = strtok(line2, ",");
+    token = strtok(line2, ":");
+    token = strtok(NULL, ",");
 
     ip_pri = token;
 

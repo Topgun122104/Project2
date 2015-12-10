@@ -45,9 +45,4 @@ The code in both Gateway programs is identical. The Gateways determine who is pr
 
 Note 2:
 ----------------------------------------------------------------------------------------------------------------------------------------------------
-All logging of the 2PC transactions will be in the gateway's local log files...not the Database files.
-----------------------------------------------------------------------------------------------------------------------------------------------------
-
-Note 3:
-----------------------------------------------------------------------------------------------------------------------------------------------------
 I, Kenneth Truex, worked on Project 1 with Victor Varela as my partner. Since this was the case, we both developed the Project 1 code base together and so, began with the same relative code base for Project 3, even though I am now partners with Lauren Mazzoli and he decided to work alone. We, Lauren and I, have modified/overhauled the code base extensively throughout this project, however, I wanted to make a note of this in case any similarities became a concern. If there are any issues with this, feel free to email me at ktruex1@umbc.edu.

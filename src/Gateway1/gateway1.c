@@ -368,9 +368,13 @@ void send2PC(char log[])
 	    //Step 1. Send ready msg
 	    sendto(sock_sec, msg1, strlen(msg1), 0, (struct sockaddr*) &server_sec, size);
 	    //printf("Step 1. Sending: : %s\n", msg1);
+	    fprintf(logFile, "SENT: %s\n", msg1);
+	    fflush(logFile);
 
 	    //Step 2. Wait for recv msg
 	    recvfrom(sock_sec, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
+	    fprintf(logFile, "RECEIVED: %s\n", secvMsg);
+	    fflush(logFile);
 	    //printf("Step 2. Received: %s \n", secvMsg);
 	    get2PCMsg(secvMsg, &pcMsg1);
 	    
@@ -383,10 +387,14 @@ void send2PC(char log[])
 
 	    sendto(sock_sec, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
 	    //printf("Step 3. Sending: : %s\n", msg2);
+	    fprintf(logFile, "SENT: %s\n", msg2);
+	    fflush(logFile);
 
 	    //Step 4. Wait for done msg
 	    memset(secvMsg, 0, sizeof(secvMsg));
 	    recvfrom(sock_sec, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
+	    fprintf(logFile, "RECEIVED: %s\n", secvMsg);
+	    fflush(logFile);
 	    //printf("Step 4. Received: %s \n", secvMsg);
 
 	    close(sock_sec);
@@ -417,14 +425,14 @@ void send2PC(char log[])
 	    //Step 1. Send ready msg
 	    sendto(sock_pri, msg1, strlen(msg1), 0, (struct sockaddr*) &server_pri, size);
 	    //printf("Step 1. Sending: : %s\n", msg1);
-	    fprintf(logFile, "SENT: %s", msg1);
+	    fprintf(logFile, "SENT: %s\n", msg1);
 	    fflush(logFile);
 
 	    //Step 2. Wait for recv msg
 	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_pri, (socklen_t *)&size);
 	    //printf("Step 2. Received: %s \n", secvMsg);
 	    get2PCMsg(secvMsg, &pcMsg1);
-	    fprintf(logFile, "RECEIVED: %s", msg1);
+	    fprintf(logFile, "RECEIVED: %s\n", msg1);
 	    fflush(logFile);
 	    
 	    //Step 3. Send COMMIT msg and update log
@@ -436,14 +444,14 @@ void send2PC(char log[])
 
 	    sendto(sock_pri, msg2, strlen(msg2), 0, (struct sockaddr*) &server_pri, size);
 	    //printf("Step 3. Sending: : %s\n", msg2);
-	    fprintf(logFile, "SENT: %s", msg1);
+	    fprintf(logFile, "SENT: %s\n", msg1);
 	    fflush(logFile);
 
 	    //Step 4. Wait for done msg
 	    memset(secvMsg, 0, sizeof(secvMsg));
 	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_pri, (socklen_t *)&size);
 	    //printf("Step 4. Received: %s \n", secvMsg);
-	    fprintf(logFile, "RECEIVED: %s", msg1);
+	    fprintf(logFile, "RECEIVED: %s\n", msg1);
 	    fflush(logFile);
 
 	    close(sock_pri);
@@ -1318,7 +1326,8 @@ int main( int argc, char *argv[] )
     port_cur = (unsigned short int) atoi(token);
 
     //Parse Primary Gateway info
-    token = strtok(line2, ",");
+    token = strtok(line2, ":");
+    token = strtok(NULL, ",");
 
     ip_pri = token;
 
