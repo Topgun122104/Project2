@@ -19,6 +19,8 @@
 #define CMD_SWITCH "switch"
 #define CMD_VECTOR "vectorClock"
 #define CMD_UPDATE "update"
+#define CMD_CRASH "crash"
+#define CMD_SYNC "sync"
 
 #define DOOR "Door"
 #define MOTION "Motion"
@@ -34,7 +36,7 @@
 #define PC_MSG_ABORT "Message:abort"
 #define PC_WAIT_VOTE "Wait:vote"
 #define PC_MOV_ABORT "Moving:abort"
-#define CONFIRM "Device Registration Confirmed"
+#define CONFIRM "Commit Confirmed"
 
 #define INTERVAL 5
 

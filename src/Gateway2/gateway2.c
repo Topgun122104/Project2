@@ -40,7 +40,6 @@ int num_gws = 2;
 //0 if there is no new log, 1 if there is one
 int sending2PCMsg = 0;
 int newMsg = 0;
-struct sockaddr_in pri_skt;
 
 // Updates the vector clock after it receives a message
 void updateVectorClock(char* msg) {
@@ -158,15 +157,117 @@ void get2PCMsg(char string[], char **msg)
     *msg = tok3;
 }
 
+void get2PCLogMsg(char string[], char** msg)
+{
+    char *tok, *tok2, *tok3;
+
+    tok = strtok(string, ";");
+
+    if( NULL != tok )
+        tok2 = strtok(NULL, ":");
+
+
+    if( NULL != tok2 )
+	tok3 = strtok(NULL, "\0");
+
+
+    *msg = tok3;
+}
+
+void process_msg(char* str)
+{
+	char sec_msg[MSG_SIZE];
+
+	if(strstr(str, "User Left Home"))
+	{
+		currSystem = 1;
+		int x;
+   		for(x=0; x<gadget_index; x++)
+    		{
+			GADGET *gadget;
+			gadget = gadget_list[x];
+        
+      			if(strcmp( gadget->gadgetType, SECURITYDEVICE) == 0) 
+        		{
+				sprintf(sec_msg, "Type:switch;Action:on");
+				write(gadget->id, sec_msg, strlen(sec_msg));
+       			 }
+		}
+    	}
+	else if(strstr(str, "User Came Home"))
+	{
+		currSystem = 0;
+		int x;
+   		for(x=0; x<gadget_index; x++)
+    		{
+			GADGET *gadget;
+			gadget = gadget_list[x];
+        
+      			 if(strcmp( gadget->gadgetType, SECURITYDEVICE) == 0) 
+        		 {
+				sprintf(sec_msg, "Type:switch;Action:off");
+				write(gadget->id, sec_msg, strlen(sec_msg));
+       			 }
+		}
+	}
+	else if(strstr(str, "ALARM SOUNDED!"))
+	{
+		return;
+	}
+	else
+	{
+		char *id, *tok, *tok2, *tok3;
+		id = strtok(str, ",");
+		tok = strtok(NULL, ",");
+		tok2 = strtok(NULL, ",");
+		tok3 = strtok(NULL, ",");
+		if(strstr(tok, "Keychain"))
+		{
+			if(strstr(tok2, "True"))
+			{
+				currKeychain = 1;
+				keychainTime = atoi(tok3);
+			}
+			else
+			{
+				currKeychain = 0;
+			}
+		}
+		else if(strstr(tok, "Motion"))
+		{
+			if(strstr(tok2, "True"))
+			{
+				currMotion = 1;
+				motionTime = atoi(tok3);
+			}
+			else
+			{	
+				currMotion = 0;
+			}
+		}
+		else if(strstr(tok, "Door"))
+		{
+			if(strstr(tok2, "Open"))
+			{
+				currDoor = 1;
+				doorTime = atoi(tok3);
+			}
+			else
+			{
+				currDoor = 0;
+			}
+		}
+	}
+}
+
 //Recv 2PC 
 void deviceListener(void *ptr)
 {
-	printf("-----CRETED DEV LISTENER");
 	int port = *((int *)ptr);
 	int sock;
 	struct sockaddr_in server, sender;
-	char server_reply[MSG_SIZE], msg1[MSG_SIZE];
-	char *pcMsg, *pcMsg2;
+	char server_reply[MSG_SIZE], msg1[MSG_SIZE], logMsg[MSG_SIZE];
+	char *pcMsg, *pcMsg2, *lm;
     	char *tok, *tok2, *tok3;
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -174,7 +275,7 @@ void deviceListener(void *ptr)
 	{
 		puts("Could not create socket");
 	}
-		printf("-----CRETED DEV LISTENER2");
+
 	server.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
@@ -182,13 +283,18 @@ void deviceListener(void *ptr)
 	bind(sock, (struct sockaddr *)&server, sizeof(server));
 
 	size_t sock_size = sizeof(struct sockaddr_in);
-		printf("-----CRETED DEV LISTENER3");
 	while(1)
 	{
-	printf("-----CRETED DEV LISTENER- WHILE");
+		//One GW crashed so no more 2PC
+		if(num_gws < 2)
+		{
+			puts("Stopping Device Listener...");
+			return;
+		}
 		// Step 1. Receive 'ready to vote?' msg from coordinator
+		memset(server_reply, 0, sizeof(server_reply));
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("Step 1: Received: %s \n", server_reply);
+		//printf("Step 1: Received: %s \n", server_reply);
 		get2PCMsg(server_reply, &pcMsg);
 
 		// Step 2. Send vote (ready or abort)
@@ -198,35 +304,47 @@ void deviceListener(void *ptr)
 		else if( sending2PCMsg == 1)
 			sprintf(msg1, "%s%i:%s", PC_MSG, newMsg,PC_VOTE_ABORT);	
 		
-		printf("Step 2: Sent: %s \n", msg1);		
+		//printf("Step 2: Sent: %s \n", msg1);		
 		sendto(sock, msg1, strlen(msg1), 0, (struct sockaddr*) &sender, sock_size);
 
 		// Step 3. Receive 'msg ready/abort' from the coordinator
 		memset(server_reply, 0, sizeof(server_reply));
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("Step 3: Received: %s \n", server_reply);
+		//printf("Step 3: Received: %s \n", server_reply);
+		memcpy(logMsg, server_reply, sizeof(logMsg));
 		get2PCMsg(server_reply, &pcMsg2);
 
 		// Step 4. Update database if not abort, and send response
-		if(strncmp(pcMsg2, "Msg:ready", 9) == 0)
+		if(strncmp(pcMsg2, "Message:ready", 13) == 0)
 		{
-			//TODO send message to the database
+			get2PCLogMsg(logMsg, &lm);
+			char temp[MSG_SIZE];
+			sprintf(temp, "Type:insert;Action:%s", lm);
+			//printf("Writing to log: %s\n", temp);
+			write(db_sock, temp, strlen(temp));
+			process_msg(lm);
+			memset(temp, 0, sizeof(temp));
 		}
 		memset(msg1, 0, sizeof(msg1));
+		memset(logMsg, 0, sizeof(logMsg));
 		sprintf(msg1, "%s%i:%s", PC_MSG, newMsg, CONFIRM);
-		printf("Step 4: Sent: %s \n", msg1);
+		//printf("Step 4: Sent: %s \n", msg1);
 		sendto(sock, msg1, strlen(msg1), 0, (struct sockaddr*) &sender, sock_size);		
-		break;
 	}
 }
 
 // Send 2PC message
 void send2PC(char log[])
 {
+    //If a GW has crashed, no point in 2PC
+    if(num_gws < 2)
+    {
+	puts("Stopping 2PC!");
+  	return;
+    }
     char msg1[MSG_SIZE], msg2[MSG_SIZE], secvMsg[MSG_SIZE];
     char *pcMsg1;
 
-    printf("------------- IN 2PC!\n");
     //If it is the primary gateway, then send to sec
     if(amPri == 1)
     {
@@ -245,16 +363,15 @@ void send2PC(char log[])
 
 	while(1)
 	{
-	    //TODO: Need to log each one of these 2PC interactions
 	    sending2PCMsg = 1;
 
 	    //Step 1. Send ready msg
 	    sendto(sock_sec, msg1, strlen(msg1), 0, (struct sockaddr*) &server_sec, size);
-	    printf("Step 1. Sending: : %s\n", msg1);
+	    //printf("Step 1. Sending: : %s\n", msg1);
 
 	    //Step 2. Wait for recv msg
 	    recvfrom(sock_sec, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
-	    printf("Step 2. Received: %s \n", secvMsg);
+	    //printf("Step 2. Received: %s \n", secvMsg);
 	    get2PCMsg(secvMsg, &pcMsg1);
 	    
 	    //Step 3. Send COMMIT msg and update log
@@ -265,12 +382,12 @@ void send2PC(char log[])
 		sprintf(msg2, "%s%i:%s", PC_MSG, newMsg, PC_MSG_ABORT);
 
 	    sendto(sock_sec, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
-	    printf("Step 3. Sending: : %s\n", msg2);
+	    //printf("Step 3. Sending: : %s\n", msg2);
 
 	    //Step 4. Wait for done msg
 	    memset(secvMsg, 0, sizeof(secvMsg));
 	    recvfrom(sock_sec, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
-	    printf("Step 4. Received: %s \n", secvMsg);
+	    //printf("Step 4. Received: %s \n", secvMsg);
 
 	    close(sock_sec);
 	    sending2PCMsg = 0;
@@ -281,31 +398,34 @@ void send2PC(char log[])
     else
     {
 	sock_pri = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
-    	struct sockaddr_in server_sec, sender;
+    	struct sockaddr_in server_pri, sender;
 	int size = sizeof(struct sockaddr_in);
 
 	puts("Socket created");
 	     
-	server_sec.sin_addr.s_addr = inet_addr( gw_sec_ip );
-	server_sec.sin_family = AF_INET;
-	server_sec.sin_port = htons( gw_sec_port );
+	server_pri.sin_addr.s_addr = inet_addr( gw_pri_ip );
+	server_pri.sin_family = AF_INET;
+	server_pri.sin_port = htons( gw_pri_port );
 
 	newMsg++;
 	sprintf(msg1, "%s%i:%s", PC_MSG, newMsg, PC_PREPARE);
 
 	while(1)
 	{
-	    //TODO: Need to log each one of these 2PC interactions
 	    sending2PCMsg = 1;
 
 	    //Step 1. Send ready msg
-	    sendto(sock_pri, msg1, strlen(msg1), 0, (struct sockaddr*) &server_sec, size);
-	    printf("Step 1. Sending: : %s\n", msg1);
+	    sendto(sock_pri, msg1, strlen(msg1), 0, (struct sockaddr*) &server_pri, size);
+	    //printf("Step 1. Sending: : %s\n", msg1);
+	    fprintf(logFile, "SENT: %s", msg1);
+	    fflush(logFile);
 
 	    //Step 2. Wait for recv msg
-	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
-	    printf("Step 2. Received: %s \n", secvMsg);
+	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_pri, (socklen_t *)&size);
+	    //printf("Step 2. Received: %s \n", secvMsg);
 	    get2PCMsg(secvMsg, &pcMsg1);
+	    fprintf(logFile, "RECEIVED: %s", msg1);
+	    fflush(logFile);
 	    
 	    //Step 3. Send COMMIT msg and update log
 	    if(strncmp(pcMsg1, "Vote:ready", 10) == 0)
@@ -314,13 +434,17 @@ void send2PC(char log[])
 	    else if(strncmp(pcMsg1, "Vote:abort", 10) == 0)
 		sprintf(msg2, "%s%i:%s", PC_MSG, newMsg, PC_MSG_ABORT);
 
-	    sendto(sock_pri, msg2, strlen(msg2), 0, (struct sockaddr*) &server_sec, size);
-	    printf("Step 3. Sending: : %s\n", msg2);
+	    sendto(sock_pri, msg2, strlen(msg2), 0, (struct sockaddr*) &server_pri, size);
+	    //printf("Step 3. Sending: : %s\n", msg2);
+	    fprintf(logFile, "SENT: %s", msg1);
+	    fflush(logFile);
 
 	    //Step 4. Wait for done msg
 	    memset(secvMsg, 0, sizeof(secvMsg));
-	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_sec, (socklen_t *)&size);
-	    printf("Step 4. Received: %s \n", secvMsg);
+	    recvfrom(sock_pri, secvMsg, MSG_SIZE, 0, (struct sockaddr*) &server_pri, (socklen_t *)&size);
+	    //printf("Step 4. Received: %s \n", secvMsg);
+	    fprintf(logFile, "RECEIVED: %s", msg1);
+	    fflush(logFile);
 
 	    close(sock_pri);
 	    sending2PCMsg = 0;
@@ -395,6 +519,7 @@ char* generateDBMsg(int id, char* type, char* sta, int val, char* ip, int port)
 // Send multicast to all devices, except database, with list of messages
 void sendDeviceListMulticast() 
 {
+	puts("Inside Multicast");
 	char deviceList[MSG_SIZE];
 	int x;
 	int index = 0;
@@ -434,7 +559,7 @@ void sendDeviceListMulticast()
 			addrDest.sin_addr.s_addr = inet_addr(gadget->ip);
 			addrDest.sin_family = AF_INET;
 			addrDest.sin_port = htons(gadget->port);
-			
+			printf("Sending Multicast to: %s\n", gadget->gadgetType);
 			if( sendto(gadget->id, deviceList , strlen(deviceList) , 0, 
 					(struct sockaddr*)&addrDest, sizeof(addrDest)) < 0)
 			{
@@ -573,6 +698,7 @@ void first_responder()
 	int x;
 	//Global Index will get larger as things register
 	int global_temp = global_index;
+	amPri = 1;
         for(x=0; x<global_temp; x++)
         {
         	GADGET *gadget = global_list[x];
@@ -606,7 +732,6 @@ void first_responder()
 
 void heartbeat_send(void *ptr)
 {
-	//puts("Inside HeartBeat Send...");
 	struct sockaddr_in server, sender;
 	int sock;
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -617,14 +742,12 @@ void heartbeat_send(void *ptr)
 	
 	if(amPri)
 	{
-		//puts("Primary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
 		server.sin_port = htons(2222);
 	}
 	else
 	{
-		//puts("Secondary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
 		server.sin_port = htons(1111);
@@ -645,21 +768,19 @@ void heartbeat_send(void *ptr)
 			puts("Calling First Responder...");
 			//Alive GW takes over everything
 			first_responder();
+			close(sock);
 			return;
 		}
-		//Send a heartbeat status every 5 
-		//puts("Sending Heartbeat...");		
+		//Send a heartbeat status every second 	
 		int n = 0;
 		n = sendto(sock, heart_msg, strlen(heart_msg), 0, (struct sockaddr*) &server, sock_size);
 
-		//puts("Heartbeat sent...");
 		sleep(1);
 	}
 }
 
 void heartbeat_recv(void *ptr)
 {
-	//puts("Inside HeartBeat Recv...");
 	struct sockaddr_in server, sender;
 	struct timeval timeout;
 	timeout.tv_sec = 6;
@@ -674,14 +795,12 @@ void heartbeat_recv(void *ptr)
 	
 	if(amPri)
 	{
-		//puts("Primary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
 		server.sin_port = htons(1111);
 	}
 	else
 	{
-		//puts("Secondary Heartbeat...");
 		server.sin_addr.s_addr = inet_addr("127.0.0.1");
 		server.sin_family = AF_INET;
 		server.sin_port = htons(2222);
@@ -698,17 +817,15 @@ void heartbeat_recv(void *ptr)
 	
 	while(1)
 	{
-		//puts("Receiving Heartbeat...");
 		int n = 0;
 		n = recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
 		if(n <= 0)
 		{
 			puts("Gateway has failed!!");
 			num_gws--;
+			printf("Number of Gateways is now: %d\n", num_gws);
 			return;
 		}
-		
-		//printf("HEARTBEAT: %s\n", server_reply);
 		
 		memset(server_reply, 0, sizeof(server_reply));
 
@@ -736,22 +853,6 @@ void *connection(void *skt_desc)
     char buf[MSG_SIZE];
     int recv_len;
 
-    pthread_t dev1_thread, dev2_thread;
-    printf("---- client_skt = %i PRI=%i  SEC=%i\n", client_skt_desc, sock_pri, sock_sec);
-    if(client_skt_desc == sock_pri)
-    {
-            if( pthread_create(&dev1_thread, NULL, (void *) &deviceListener, (void *) &gw_pri_port) < 0 )
-            {
-                perror("Thread Creation Failed");
-            }
-    } 
-    else if( client_skt_desc == sock_sec) 
-    {
-            if( pthread_create(&dev2_thread, NULL, (void *) &deviceListener, (void *) &gw_sec_port) < 0 )
-            {
-                perror("Thread Creation Failed");
-            }
-    }
     // Receive Data from Client
     while( (read_size = recv(client_skt_desc, client_msg, sizeof(client_msg), 0)) > 0 )
     {
@@ -795,12 +896,9 @@ void *connection(void *skt_desc)
            		        strcpy(gadget->state, ON);
 	   		}
 			
-			if(!strstr(gadget->gadgetType, DATABASE))
-	    		{
-				gadget_list[gadget_index++] = gadget;
-				global_list[global_index++] = gadget;
-				puts("Device added to local and global list...");
-			}
+			gadget_list[gadget_index++] = gadget;
+			global_list[global_index++] = gadget;
+			puts("Device added to local and global list...");
 
             		// Creating list of the ports and ips to send to all devices 
 
@@ -817,7 +915,15 @@ void *connection(void *skt_desc)
 				db_sock = client_skt_desc;
 	   		 }
 
-			 gw_index++;
+			gw_index++;
+            		if(!strstr(gadget->gadgetType, DATABASE) && num_gws == 2)
+	    		{
+				char switch_msg[MSG_SIZE];
+				sprintf(switch_msg, "Type:sync;Action:%s,%u", gw_sec_ip, gw_sec_port);
+				printf("Sync Message: %s\n", switch_msg);
+				write(client_skt_desc, switch_msg, strlen(switch_msg));
+	    		}
+			
 		 }
 		 //Device Goes
 		 else if(num_gws == 2)
@@ -847,7 +953,6 @@ void *connection(void *skt_desc)
 
             		global_list[global_index++] = gadget;
  			//Send update message to switch to alternate GW
-			puts("Device  added to global and is being reassigned!");
 			char switch_msg[MSG_SIZE];
 			sprintf(switch_msg, "Type:update;Action:%s,%u", gw_sec_ip, gw_sec_port);
 			printf("Switch Message: %s\n", switch_msg);
@@ -884,7 +989,6 @@ void *connection(void *skt_desc)
 
             	gadget_list[gadget_index++] = gadget;
 		global_list[global_index++] = gadget;
-		puts("Device added to local list...");
 
             	// Creating list of the ports and ips to send to all devices            
 
@@ -902,6 +1006,38 @@ void *connection(void *skt_desc)
 	    }
         }
 
+	// Register Case
+        if( strncmp(command, CMD_SYNC, strlen(CMD_SYNC)) == 0 )
+        {
+            		char *t_gadgetType, *t_ip;
+            
+            		getInfo(action, &t_gadgetType, &t_ip, &gadget->port, &gadget->area);
+            
+            		gadget->gadgetType = (char *)malloc(sizeof(char) * strlen(t_gadgetType));
+            		memcpy(gadget->gadgetType, t_gadgetType, strlen(t_gadgetType));
+
+            		gadget->ip = (char *)malloc(sizeof(char) * strlen(t_ip));
+            		memcpy(gadget->ip, t_ip, strlen(t_ip));
+
+	    		//Security System is off by default
+            		if(strstr(gadget->gadgetType, SECURITYDEVICE))
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 4);            
+            		        strcpy(gadget->state, OFF);
+	    		}
+	    		else
+	    		{
+				gadget->state = (char *)malloc(sizeof(char) * 3);            
+           		        strcpy(gadget->state, ON);
+	   		}
+			
+			global_list[global_index++] = gadget;
+			puts("Device added to global list...");
+			memset(client_msg, 0, sizeof(client_msg));
+			continue;
+
+	}
+
         // Current Temperature Value Case
         else if( strncmp(command, CMD_VALUE, strlen(CMD_VALUE)) == 0 ) 
         {
@@ -914,8 +1050,10 @@ void *connection(void *skt_desc)
 			log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 						gadget->port);
 			fprintf(logFile, "%s", log_msg);
 			fflush(logFile);
-			//printf("------------- SENDING 2PC!\n");
-	                //send2PC(log_msg);
+			if(num_gws == 2)
+			{
+	                	send2PC(log_msg);
+			}			
 			write(db_sock, log_msg, strlen(log_msg));
         }
 
@@ -943,8 +1081,10 @@ void *connection(void *skt_desc)
 	    log_msg = generateDBMsg(client_skt_desc, gadget->gadgetType, gadget->state, gadget->currValue, gadget->ip, 					gadget->port);
 	    fprintf(logFile, "%s", log_msg);
 	    fflush(logFile);
-	    printf("------------- SENDING 2PC!\n");
-	    send2PC(log_msg);
+	    if(num_gws == 2)
+	    {
+	           send2PC(log_msg);
+	    }
 	    write(db_sock, log_msg, strlen(log_msg));
         }
         
@@ -958,8 +1098,10 @@ void *connection(void *skt_desc)
 
 		    fprintf(logFile, "%s\n", log_msg);
 		    fflush(logFile);
- 		    printf("------------- SENDING 2PC!\n");
-	            send2PC(log_msg);
+	            if(num_gws == 2)
+		    {
+	                send2PC(log_msg);
+		    }
 		    write(db_sock, log_msg, strlen(log_msg));
     		
         }
@@ -976,8 +1118,10 @@ void *connection(void *skt_desc)
 			char* db_log_msg = "Type:insert;Action:ALARM SOUNDED!\n";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 			fflush(logFile);
-			printf("------------- SENDING 2PC!\n");
-	                send2PC(log_msg);
+	                if(num_gws == 2)
+		        {
+	                    send2PC(db_log_msg);
+		        }
 			write(db_sock, db_log_msg, strlen(db_log_msg));
 		}
         	else if(userHome()) 
@@ -1014,8 +1158,10 @@ void *connection(void *skt_desc)
 			char* db_log_msg = "Type:insert;Action:User Came Home!\n";
 			fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 			fflush(logFile);
-			printf("------------- SENDING 2PC!\n");
-	                send2PC(log_msg);
+	                if(num_gws == 2)
+		        {
+	                    send2PC(db_log_msg);
+		        }
 			write(db_sock, db_log_msg, strlen(db_log_msg));
         	}
         }
@@ -1058,8 +1204,10 @@ void *connection(void *skt_desc)
 		        char* db_log_msg = "Type:insert;Action:User Came Home!\n";
 		        fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
 		        fflush(logFile);
-			printf("------------- SENDING 2PC!\n");
-	                send2PC(log_msg);
+	                if(num_gws == 2)
+		        {
+	                    send2PC(db_log_msg);
+		        }
 		        write(db_sock, db_log_msg, strlen(db_log_msg));
         	}
 		else if(homeEmpty())
@@ -1094,8 +1242,10 @@ void *connection(void *skt_desc)
         	        char* gw_log_msg = "User Left Home\n";
 		        char* db_log_msg = "Type:insert;Action:User Left Home!\n";
 		        fprintf(logFile, "%s %u", gw_log_msg, (unsigned)time(NULL));
-			printf("------------- SENDING 2PC!\n");
-	                send2PC(log_msg);
+	                if(num_gws == 2)
+		        {
+	                    send2PC(db_log_msg);
+		        }
 		        fflush(logFile);
 		        write(db_sock, db_log_msg, strlen(db_log_msg));
 		}
@@ -1341,6 +1491,7 @@ int main( int argc, char *argv[] )
             {
                 perror("Thread Creation Failed");
             }
+
             if( pthread_create(&hbeat1R_thread, NULL, (void *) &heartbeat_recv, NULL) < 0 )
             {
                 perror("Thread Creation Failed");
@@ -1359,6 +1510,7 @@ int main( int argc, char *argv[] )
             {
                 perror("Thread Creation Failed");
             }
+
             if( pthread_create(&hbeat2R_thread, NULL, (void *) &heartbeat_recv, NULL) < 0 )
             {
                 perror("Thread Creation Failed");

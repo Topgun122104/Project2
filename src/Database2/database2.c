@@ -152,12 +152,19 @@ int main(int argc , char *argv[])
 
     while(1)
     {
+	memset(server_reply, 0, sizeof(server_reply));
         // The database will only receive commands from Gateway
         if( recv(sock , server_reply , MSG_SIZE , 0) < 0)
         {
             puts("Gateway reply failed");
             break;
         }
+	if(server_reply[0] == 0)
+	{
+		puts("Gateway Offline...");
+		puts("Closing DB...");
+		return;
+	}
         printf("Received: From: gateway Msg:%s Time:%u\n\n",server_reply, (unsigned)time(NULL));
 
         getCommands(server_reply,&type,&action);

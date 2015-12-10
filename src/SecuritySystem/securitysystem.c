@@ -12,6 +12,7 @@ struct VECTORCLOCK vectorclock;
 GADGET *gadget_list[MAX_CONNECTIONS];
 int gadget_index = 0;
 FILE *logFile;
+char* global_ip;
 char casualty_msg[MSG_SIZE];
 unsigned short int cas_port;
 int crash_flag = 0;
@@ -66,12 +67,12 @@ void sendMulticast(char *vectorMsg, int s)
 			puts("couldnt create socket");
 				
 		GADGET *gadget = gadget_list[x];
-		server.sin_addr.s_addr = inet_addr("127.0.0.1");
+		server.sin_addr.s_addr = inet_addr(global_ip);
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gadget->port);
 				
 		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
-			puts("\n send failed!");
+			perror("\n send failed");
 	}
 }
 
@@ -148,7 +149,7 @@ void deviceListener(void *ptr)
 	{
 		char *command, *action;
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("Received: From:127.0.0.1:%i Msg:%s Time:%u\n\n", port, server_reply, (unsigned)time(NULL));
+		printf("Received: From:127.0.0.1:%d Msg:%s Time:%u\n\n", port, server_reply, (unsigned)time(NULL));
 		getCommands(server_reply, &command, &action);
 		updateVectorClock(action);
 	}
@@ -176,7 +177,6 @@ void casualty(void *ptr)
 	while(1)
 	{
 		int n = 0;
-		printf("Listening for First Responder on port: %u\n", cas_port);
 		recvfrom(sock, casualty_msg, sizeof(casualty_msg), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
 		printf("CASUALTY: %s\n", casualty_msg);
 		crash_flag = 1;
@@ -252,6 +252,7 @@ int main(int argc , char *argv[])
     if( NULL != d_token2 )
     {
         d_ip = d_token2;
+	global_ip = d_token2;
         d_token3 = strtok(NULL, "");
     }
     
@@ -265,8 +266,8 @@ int main(int argc , char *argv[])
     }
 
     sigignore(SIGPIPE);
-    int sock, sock2, new_sock;
-    struct sockaddr_in server, server2, new_server;
+    int sock, sock2, new_sock, sync_sock;
+    struct sockaddr_in server, server2, new_server, sync_server;
     char server_reply[MSG_SIZE];
      
     //Create socket
@@ -385,7 +386,6 @@ int main(int argc , char *argv[])
 			memset(msg, 0, sizeof(msg));
 
 			puts("IP has been updated...");
-			sleep(5);
 			continue;
 		}
 	}
@@ -397,6 +397,7 @@ int main(int argc , char *argv[])
        		{
         	    perror("First Send failed");
        		}
+		memset(msg, 0, sizeof(msg));
 	}
         
         // Send multicast 
@@ -413,11 +414,11 @@ int main(int argc , char *argv[])
             // Send multicast with msg to all devices
            sendMulticast(vc, sock2);
            
-         	if(send(sock , vc , strlen(vc) , 0) < 0)
-         	{
-             	puts("Send failed2"); 
-               break;
-            }
+         	//if(send(sock , vc , strlen(vc) , 0) < 0)
+         	//{
+             	//puts("Send failed2"); 
+              // break;
+           // }
         }
 
         // Receive server (gateway) response
@@ -426,15 +427,64 @@ int main(int argc , char *argv[])
             printf("Received:From:gateway Msg:%s Time:%u\n\nf", server_reply, (unsigned)time(NULL));
             
         	// The device list multicast message
-        	if( strncmp( server_reply, "DeviceList", 10) == 0) 
+        	if( strstr( server_reply, "DeviceList")) 
         	{
+			printf("Device List: %s\n", server_reply);
         		saveDevices(server_reply, d_ip, d_port);
+        	}
+		else if( strstr( server_reply, "sync")) 
+        	{
+			getCommands(server_reply,&type,&action);
+        		puts("Notifying other GW of presence...");
+
+
+   			//Parse Current Gateway info
+    			token = strtok(action, ",");
+
+    			char* ip_cur = token;
+
+    			if( NULL != token )
+    			{
+        			token = strtok(NULL, ",");
+    			}
+
+    			int port_cur = (unsigned short int) atoi(token);
+
+			if(!strstr(ip_cur, d_ip) || port_cur != d_port)
+			{
+				//Create socket to slternate gateway
+    				sync_sock = socket(AF_INET , SOCK_STREAM , 0);
+    				if (sync_sock == -1)
+    				{
+        				printf("Could not create new gateway socket");
+    				}
+
+    
+				sync_server.sin_addr.s_addr = inet_addr( ip_cur );
+    				sync_server.sin_family = AF_INET;
+    				sync_server.sin_port = htons( port_cur );
+        			
+				//Connect to other gateway
+    				if (connect(sync_sock , (struct sockaddr *)&sync_server , sizeof(sync_server)) < 0)
+    				{
+        				perror("connect failed. Error");
+        				return 1;
+    				}
+
+				sprintf(msg, "Type:sync;Action:%s-%s-%d-%d",
+            				d_type, d_ip, d_port, d_area);
+				write(sync_sock, msg, strlen(msg));
+				memset(msg, 0, sizeof(msg));
+
+				puts("Other GW Notified...");
+				continue;
+				
+        		}
         	}
         
         	else 
-        	{
-        		getCommands(server_reply,&type,&action);
-        		
+        	{        	
+			getCommands(server_reply,&type,&action);	
         		if ( strncmp( type, CMD_SWITCH, strlen(CMD_SWITCH) ) == 0 )
         		{
         			strcpy(state, action);
@@ -476,19 +526,22 @@ int main(int argc , char *argv[])
 					close(sock);
         			
 					//Connect to other gateway
-    					if (connect(new_sock , (struct sockaddr *)&new_server , sizeof(server)) < 0)
+    					if (connect(new_sock , (struct sockaddr *)&new_server , sizeof(new_server)) < 0)
     					{
         					perror("connect failed. Error");
         					return 1;
     					}
+
+					sock = new_sock;
 					//Resend the register to the new gateway only if load blanacing
 					if(strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0)
 					{
 						sprintf(msg, "Type:register;Action:%s-%s-%d-%d",
-            						d_type, d_ip, d_port, d_area);
+            					d_type, d_ip, d_port, d_area);
+						write(sock, msg, strlen(msg));
+						memset(msg, 0, sizeof(msg));
 					}
-					
-					sock = new_sock;
+
 					puts("IP has been updated...");
 					memset(msg, 0, sizeof(msg));
 					memset(server_reply, 0, sizeof(server_reply));

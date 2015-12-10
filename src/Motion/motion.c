@@ -13,6 +13,8 @@ struct VECTORCLOCK vectorclock;
 GADGET *gadget_list[MAX_CONNECTIONS];
 int gadget_index = 0;
 int *input;
+char config_file[MSG_SIZE];
+char* global_ip;
 int array_size;
 FILE *logFile; 
 char casualty_msg[MSG_SIZE];
@@ -67,17 +69,16 @@ void sendMulticast(char *vectorMsg, int s)
 		
 		if (sock == -1)
 			puts("couldnt create socket");
-		
+				
 		GADGET *gadget = gadget_list[x];
-		server.sin_addr.s_addr = inet_addr(gadget->ip);
+		server.sin_addr.s_addr = inet_addr(global_ip);
 		server.sin_family = AF_INET;
 		server.sin_port = htons(gadget->port);
 				
 		if( sendto(sock, vectorMsg, strlen(vectorMsg), 0, (struct sockaddr*)&server, sizeof(server)) < 0)
-			puts("\n send failed");
+			perror("\n send failed");
 	}
 }
-
 void saveDevices(char string[], char *ip, int port) 
 {
 	char *token, *t, *p;
@@ -126,7 +127,7 @@ int isOn(char *state)
 
 void *timer()
 {
-    FILE *fp = fopen("../SampleConfigurationFiles/SampleMotionInput.txt","r");
+    FILE *fp = fopen(config_file,"r");
 
     if ( NULL == fp )
     {
@@ -236,7 +237,7 @@ void deviceListener(void *ptr)
 	{
 		char *command, *action;
 		recvfrom(sock, server_reply, sizeof(server_reply), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
-		printf("Received: From:127.0.0.1:%i Msg:%s Time:%u,\n\n", port, server_reply, (unsigned)time(NULL));
+		printf("Received: From:127.0.0.1:%d Msg:%s Time:%u,\n\n", port, server_reply, (unsigned)time(NULL));
 		getCommands(server_reply, &command, &action);
 		updateVectorClock(action);
 	}
@@ -264,7 +265,6 @@ void casualty(void *ptr)
 	while(1)
 	{
 		int n = 0;
-		printf("Listening for First Responder on port: %u\n", cas_port);
 		recvfrom(sock, casualty_msg, sizeof(casualty_msg), 0, (struct sockaddr *)&sender, (socklen_t *)&sock_size);
 		printf("CASUALTY: %s\n", casualty_msg);
 		crash_flag = 1;
@@ -291,6 +291,8 @@ int main(int argc , char *argv[])
         perror("Motion Sensor Log File Read Failure");
         return 1;
     }
+
+    memcpy(config_file, argv[2], sizeof(config_file));
 
     fseek(fp, 0, SEEK_END);
     long pos = ftell(fp);
@@ -339,6 +341,7 @@ int main(int argc , char *argv[])
     if( NULL != s_token2 )
     {
         s_ip = s_token2;
+	global_ip = s_token2;
         s_token3 = strtok(NULL, "");
     }
 
@@ -352,8 +355,8 @@ int main(int argc , char *argv[])
     }
 
     sigignore(SIGPIPE);
-    int sock, new_sock;
-    struct sockaddr_in server, new_server;    
+    int sock, new_sock, sync_sock;
+    struct sockaddr_in server, new_server, sync_server;    
     char *message;
     char server_reply[MSG_SIZE];
     char reply[MSG_SIZE];
@@ -475,7 +478,6 @@ int main(int argc , char *argv[])
 			write(sock, msg, strlen(msg));
 			memset(msg, 0, sizeof(msg));
 			puts("IP has been updated...");
-			sleep(5);
 			continue;
 		}
 	}
@@ -507,11 +509,11 @@ int main(int argc , char *argv[])
              // Send multicast with msg to all devices
              sendMulticast(vc, sock);
            
-         	if(send(sock , vc , strlen(vc) , 0) < 0)
-         	{
-             	puts("Send failed"); 
-               break;
-           }
+         	//if(send(sock , vc , strlen(vc) , 0) < 0)
+         	//{
+             	//puts("Send failed"); 
+              // break;
+           //}
         }
         
         fcntl(sock, F_SETFL, O_NONBLOCK);
@@ -520,16 +522,64 @@ int main(int argc , char *argv[])
         if( recv(sock , server_reply , MSG_SIZE , 0) > 0)
         {
             printf("Received:From:gateway Msg:%s Time:%u\n\n", server_reply, (unsigned)time(NULL));
-
-		getCommands(server_reply,&type,&action);
             
         	// The device list multicast message
-        	if( strncmp( server_reply, "DeviceList", 10) == 0) 
+        	if( strstr( server_reply, "DeviceList")) 
         	{
+			printf("Device List: %s\n", server_reply);
         		saveDevices(server_reply, s_ip, s_port);
         	}
-		else if (strncmp( type, CMD_UPDATE, strlen(CMD_UPDATE)) == 0 || strncmp(type, CMD_CRASH, strlen(CMD_CRASH)) == 0)
+		else if( strstr( server_reply, "sync")) 
         	{
+			getCommands(server_reply,&type,&action);
+        		puts("Notifying other GW of presence...");
+
+
+   			//Parse Current Gateway info
+    			token = strtok(action, ",");
+
+    			char* ip_cur = token;
+
+    			if( NULL != token )
+    			{
+        			token = strtok(NULL, ",");
+    			}
+
+    			int port_cur = (unsigned short int) atoi(token);
+
+			if(!strstr(ip_cur, s_ip) || port_cur != s_port)
+			{
+				//Create socket to slternate gateway
+    				sync_sock = socket(AF_INET , SOCK_STREAM , 0);
+    				if (sync_sock == -1)
+    				{
+        				printf("Could not create new gateway socket");
+    				}
+
+    
+				sync_server.sin_addr.s_addr = inet_addr( ip_cur );
+    				sync_server.sin_family = AF_INET;
+    				sync_server.sin_port = htons( port_cur );
+        			
+				//Connect to other gateway
+    				if (connect(sync_sock , (struct sockaddr *)&sync_server , sizeof(sync_server)) < 0)
+    				{
+        				perror("connect failed. Error");
+        				return 1;
+    				}
+
+				sprintf(msg, "Type:sync;Action:%s-%s-%d-%d",
+            				s_type, s_ip, s_port, s_area);
+				write(sync_sock, msg, strlen(msg));
+				memset(msg, 0, sizeof(msg));
+
+				puts("Other GW Notified...");
+				continue;
+        		}
+        	}
+		else if (strstr( server_reply, "update")|| strstr( server_reply, "crash"))
+        	{
+			getCommands(server_reply,&type,&action);
 			puts("Updating IP to alternate GW...");
 
 
@@ -561,7 +611,7 @@ int main(int argc , char *argv[])
 				close(sock);
         			
 				//Connect to other gateway
-    				if (connect(new_sock , (struct sockaddr *)&new_server , sizeof(server)) < 0)
+    				if (connect(new_sock , (struct sockaddr *)&new_server , sizeof(new_server)) < 0)
     				{
         				perror("connect failed. Error");
         				return 1;

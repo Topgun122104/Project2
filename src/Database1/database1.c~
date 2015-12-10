@@ -162,7 +162,7 @@ int main(int argc , char *argv[])
 	if(server_reply[0] == 0)
 	{
 		puts("Gateway Offline...");
-		puts("Closing DB...");
+		puts("Closing DB...")
 		return;
 	}
         printf("Received: From: gateway Msg:%s Time:%u\n\n",server_reply, (unsigned)time(NULL));
